@@ -42,7 +42,7 @@
 ### 1. Cloner ou télécharger le projet
 
 ```bash
-git clone https://github.com/votre-username/V2T.git
+git clone https://github.com/qurnt1/V2T.git
 cd V2T
 ```
 
