@@ -1,0 +1,23 @@
+# --- Sécurité (TRÈS IMPORTANT) ---
+.env
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- Environnements virtuels ---
+venv/
+.venv/
+env/
+
+# --- IDE (Configuration éditeur) ---
+.vscode/
+.idea/
+
+# --- Fichiers de build (si tu compiles en .exe plus tard) ---
+build/
+dist/
+*.spec
+
+# --- Logs système ---
+*.log
