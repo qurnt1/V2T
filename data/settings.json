@@ -1,7 +1,7 @@
 {
     "mic_index": 1,
     "use_ai": true,
-    "hotkey": "ctrl+f9",
+    "hotkey": "f8",
     "language": "fr",
     "sound_enabled": true
 }

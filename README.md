@@ -69,16 +69,6 @@ key_groq_api = "votre_clé_api_groq_ici"
 
 > 💡 Obtenez votre clé API gratuite sur [console.groq.com](https://console.groq.com)
 
-### 5. Ajouter les ressources optionnelles
-
-Pour personnaliser l'application, ajoutez ces fichiers dans le dossier `data/` :
-
-```
-data/
-├── icon.ico          # Icône pour la barre des tâches
-└── skin.png          # Image d'overlay (recommandé: 256x256)
-```
-
 ---
 
 ## 📖 Utilisation
