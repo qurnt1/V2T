@@ -273,35 +273,10 @@ Ce projet est sous licence MIT. Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-## 📞 Support
-
-Si vous rencontrez des problèmes :
-
-1. Vérifiez la section [Dépannage](#-dépannage)
-2. Consultez les [Issues existantes](https://github.com)
-3. Ouvrez une nouvelle issue avec :
-   - Description du problème
-   - Étapes pour reproduire
-   - Logs d'erreur si applicable
-
----
-
-## 🚀 Roadmap
-
-- [ ] Support Mac/Linux
-- [ ] Interface web alternative
-- [ ] Historique des transcriptions
-- [ ] Exportation en PDF/DOCX
-- [ ] Intégration avec des services cloud
-- [ ] Mode dictionnaire (corrections orthographiques)
-- [ ] Support des plugins
-
----
-
 <div align="center">
 
 **[⬆ Retour au top](#️-v2t---voice-to-text)**
 
-Fait avec ❤️ par [Auteur]
+Fait avec ❤️ par qurnt1
 
 </div>
