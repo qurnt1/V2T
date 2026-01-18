@@ -8,34 +8,36 @@
 [![PyQt6](https://img.shields.io/badge/UI-PyQt6-41CD52.svg)](https://pypi.org/project/PyQt6/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-*Application élégante pour transcrire votre voix en texte avec un design futuriste violet/noir*
+*Application desktop élégante pour transcrire votre voix en texte avec un design futuriste violet/noir*
 
 </div>
 
 ---
 
-## ✨ Nouveautés V2.0
+## ✨ Fonctionnalités
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| 🎨 **UI Premium** | Design moderne avec thème violet/noir et animations fluides |
+| 🎨 **UI Premium** | Design moderne thème violet/noir avec animations fluides |
 | 📊 **Waveform** | Visualisation audio temps réel avec gradient violet |
-| 🌐 **Mode Online** | Transcription rapide via Groq Whisper API |
-| 💻 **Mode Offline** | Transcription locale avec faster-whisper (modèle base) |
+| 🌐 **Mode Online** | Transcription ultra-rapide via Groq Whisper API |
+| 💻 **Mode Offline** | Transcription locale avec faster-whisper (GPU/CPU) |
 | 📝 **Historique** | Sauvegarde et consultation de toutes vos transcriptions |
 | ⌨️ **Hotkey Global** | Raccourci clavier personnalisable (F8 par défaut) |
 | 📋 **Auto-Paste** | Le texte est automatiquement collé dans votre application |
+| 🔔 **System Tray** | L'app reste en arrière-plan, accessible depuis la barre des tâches |
+| 🎚️ **Toggles visuels** | Switches vert/rouge intuitifs pour ON/OFF |
 
 ---
 
-## 🖼️ Aperçu
+## 🖼️ Interface
 
 L'interface suit un design futuriste avec :
 - Fond sombre `#0D0D0D`
 - Accents violets `#8B5CF6` à `#A855F7`
 - Bouton micro animé avec effet glow pulsant
 - Visualisation audio en barres verticales
-- Cartes avec bordures lumineuses
+- Cartes avec bordures lumineuses au survol
 
 ---
 
@@ -45,7 +47,7 @@ L'interface suit un design futuriste avec :
 - **Windows 10/11**
 - **Microphone** fonctionnel
 - **Clé API Groq** (gratuite) pour le mode online
-- **GPU NVIDIA** (optionnel, pour accélérer le mode offline)
+- **GPU NVIDIA** (optionnel, accélère le mode offline)
 
 ---
 
@@ -61,8 +63,8 @@ cd V2T
 ### 2. Créer un environnement virtuel
 
 ```bash
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 ```
 
 ### 3. Installer les dépendances
@@ -98,30 +100,35 @@ python main.py
 3. **Appuyez à nouveau sur F8** pour arrêter
 4. Le texte est transcrit et collé automatiquement !
 
-### Navigation
+### System Tray
+
+- **Fermer (X)** → L'app se cache dans la barre des tâches
+- **Clic droit sur l'icône** → Menu avec options
+- **Afficher V2T** → Réouvre la fenêtre
+- **Quitter** → Ferme complètement l'application
+
+### Pages
 
 | Page | Description |
 |------|-------------|
 | 🏠 **Accueil** | Bouton micro et waveform |
 | 📝 **Transcription** | Animation pendant le traitement |
-| 📂 **Historique** | Toutes vos transcriptions sauvegardées |
+| 📂 **Historique** | Transcriptions sauvegardées |
 | ⚙️ **Paramètres** | Configuration de l'app |
 
 ---
 
 ## ⚙️ Configuration
 
-### Paramètres disponibles
-
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| 🎙️ **Microphone** | Appareil audio | Auto-détection |
-| 🌍 **Langue** | FR, EN, ES, DE, IT, PT, JA, ZH | Français |
-| 🔑 **Clé API** | Clé Groq pour mode online | - |
-| ⌨️ **Raccourci** | Touche pour enregistrer | F8 |
-| 🤖 **Mode** | Online (Groq) ou Offline (Whisper) | Online |
-| 📋 **Auto-Paste** | Coller automatiquement | Activé |
-| 🔊 **Sons** | Feedback sonore | Activé |
+| **Microphone** | Appareil audio | Auto-détection |
+| **Langue** | FR, EN, ES, DE, IT, PT, JA, ZH | Français |
+| **Clé API** | Clé Groq pour mode online | - |
+| **Raccourci** | Touche pour enregistrer | F8 |
+| **Mode** | Online (Groq) ou Offline (Whisper) | Online |
+| **Auto-Paste** | Coller automatiquement | ✅ Activé |
+| **Sons** | Feedback sonore | ✅ Activé |
 
 ---
 
@@ -134,46 +141,58 @@ V2T/
 ├── .env                    # Clé API (non versionné)
 │
 ├── src/
-│   ├── app.py              # Application principale
+│   ├── app.py              # Application principale + TrayBridge
 │   │
 │   ├── core/               # Logique métier
 │   │   ├── audio_recorder.py
 │   │   ├── groq_transcriber.py
 │   │   ├── whisper_transcriber.py
-│   │   └── hotkey_manager.py
+│   │   ├── hotkey_manager.py
+│   │   └── transcriber.py
 │   │
 │   ├── services/           # Services
 │   │   ├── settings.py
 │   │   ├── storage.py
 │   │   └── tray_icon.py
 │   │
-│   ├── ui/                 # Interface
+│   ├── ui/                 # Interface PyQt6
 │   │   ├── main_window.py
 │   │   ├── pages/
+│   │   │   ├── home_page.py
+│   │   │   ├── history_page.py
+│   │   │   ├── settings_page.py
+│   │   │   └── transcribing_page.py
 │   │   ├── widgets/
+│   │   │   ├── mic_button.py
+│   │   │   ├── waveform.py
+│   │   │   └── transcript_card.py
 │   │   └── styles/
+│   │       └── theme.py
 │   │
-│   └── utils/              # Utilitaires
+│   └── utils/
 │       └── constants.py
 │
 └── data/
-    ├── settings.json       # Configuration
+    ├── settings.json       # Configuration utilisateur
     └── transcripts.db      # Historique (SQLite)
 ```
 
 ---
 
-## 📦 Dépendances Principales
+## 📦 Dépendances
 
 | Package | Usage |
 |---------|-------|
 | **PyQt6** | Interface graphique moderne |
-| **sounddevice** | Capture audio (remplace PyAudio) |
-| **numpy/scipy** | Traitement signal pour waveform |
+| **sounddevice** | Capture audio |
+| **numpy** | Traitement signal pour waveform |
 | **groq** | API transcription online |
 | **faster-whisper** | Transcription offline locale |
+| **torch** | Support GPU pour faster-whisper |
 | **keyboard** | Hotkey global |
+| **pystray** | Icône System Tray |
 | **peewee** | ORM SQLite pour l'historique |
+| **Pillow** | Génération icône tray |
 
 ---
 
@@ -211,6 +230,10 @@ pip install --upgrade PyQt6 sounddevice
 
 - Utilisez un GPU NVIDIA avec CUDA
 - Ou activez le mode online (plus rapide)
+
+### Erreur "Timers cannot be started from another thread"
+
+Ce bug a été corrigé dans la version actuelle avec `TrayBridge`.
 
 ---
 
