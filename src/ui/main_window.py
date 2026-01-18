@@ -339,7 +339,34 @@ class MainWindow(QMainWindow):
         
         self._home_page.update_hotkey_text(new_hotkey)
     
-    # === Cleanup ===
+    # === Window Events ===
+    
+    def showEvent(self, event) -> None:
+        """Handle window show - restart animations."""
+        super().showEvent(event)
+        # Use QTimer.singleShot to ensure we're in the main thread
+        QTimer.singleShot(0, self._restart_animations)
+    
+    def _restart_animations(self) -> None:
+        """Restart animations (called from main thread)."""
+        try:
+            self._home_page._waveform.start()
+            self._home_page._mic_button._pulse_timer.start(30)
+        except Exception:
+            pass
+        # Force repaint
+        self.repaint()
+        self.update()
+    
+    def hideEvent(self, event) -> None:
+        """Handle window hide - pause animations to save CPU."""
+        super().hideEvent(event)
+        # Stop animations to save resources
+        try:
+            self._home_page._waveform.stop()
+            self._home_page._mic_button._pulse_timer.stop()
+        except Exception:
+            pass
     
     def closeEvent(self, event) -> None:
         """Handle window close - hide to tray instead of quitting."""
