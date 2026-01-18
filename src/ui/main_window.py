@@ -342,7 +342,13 @@ class MainWindow(QMainWindow):
     # === Cleanup ===
     
     def closeEvent(self, event) -> None:
-        """Handle window close."""
+        """Handle window close - hide to tray instead of quitting."""
+        # Hide window instead of closing
+        self.hide()
+        event.ignore()  # Don't actually close
+    
+    def force_quit(self) -> None:
+        """Force quit the application (called from tray menu)."""
         # Stop recording if active
         if self._is_recording and self._audio_recorder:
             self._audio_recorder.stop()
@@ -354,4 +360,6 @@ class MainWindow(QMainWindow):
         self._home_page.cleanup()
         self._transcribing_page.cleanup()
         
-        event.accept()
+        # Accept close
+        from PyQt6.QtWidgets import QApplication
+        QApplication.quit()

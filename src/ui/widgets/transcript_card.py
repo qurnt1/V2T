@@ -96,7 +96,7 @@ class TranscriptCard(QFrame):
         buttons_layout.addStretch()
         
         # Copy button
-        self._copy_btn = QPushButton("📋 Copier")
+        self._copy_btn = QPushButton("Copier")
         self._copy_btn.setFont(QFont("Segoe UI", 9))
         self._copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._copy_btn.clicked.connect(self._on_copy)
@@ -116,7 +116,7 @@ class TranscriptCard(QFrame):
         buttons_layout.addWidget(self._copy_btn)
         
         # Delete button
-        self._delete_btn = QPushButton("🗑️")
+        self._delete_btn = QPushButton("Suppr.")
         self._delete_btn.setFont(QFont("Segoe UI", 9))
         self._delete_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._delete_btn.clicked.connect(self._on_delete)

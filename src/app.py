@@ -67,10 +67,10 @@ class V2TApp:
     
     def _quit_app(self) -> None:
         """Quit the application."""
+        if self._tray_manager:
+            self._tray_manager.stop()
         if self._main_window:
-            self._main_window.close()
-        if self._app:
-            self._app.quit()
+            self._main_window.force_quit()
     
     def run(self) -> int:
         """Run the application."""
