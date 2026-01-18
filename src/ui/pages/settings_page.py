@@ -70,7 +70,7 @@ class SettingsPage(QWidget):
         
         header.addStretch()
         
-        title = QLabel("⚙️ Paramètres")
+        title = QLabel("Paramètres")
         title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {Colors.TEXT_PRIMARY};")
         header.addWidget(title)
@@ -86,7 +86,7 @@ class SettingsPage(QWidget):
         # ===== Settings Sections =====
         
         # --- Microphone ---
-        layout.addWidget(self._create_section_label("🎙️ Microphone"))
+        layout.addWidget(self._create_section_label("Microphone"))
         
         self._mic_combo = QComboBox()
         self._mic_combo.setStyleSheet(self._get_combo_style())
@@ -94,7 +94,7 @@ class SettingsPage(QWidget):
         layout.addWidget(self._mic_combo)
         
         # --- Language ---
-        layout.addWidget(self._create_section_label("🌍 Langue"))
+        layout.addWidget(self._create_section_label("Langue"))
         
         self._lang_combo = QComboBox()
         self._lang_combo.setStyleSheet(self._get_combo_style())
@@ -104,7 +104,7 @@ class SettingsPage(QWidget):
         layout.addWidget(self._lang_combo)
         
         # --- API Key ---
-        layout.addWidget(self._create_section_label("🔑 Clé API Groq"))
+        layout.addWidget(self._create_section_label("Clé API Groq"))
         
         api_layout = QHBoxLayout()
         self._api_input = QLineEdit()
@@ -130,7 +130,7 @@ class SettingsPage(QWidget):
         layout.addWidget(api_link)
         
         # --- Hotkey ---
-        layout.addWidget(self._create_section_label("⌨️ Raccourci clavier"))
+        layout.addWidget(self._create_section_label("Raccourci clavier"))
         
         self._hotkey_btn = QPushButton("F8")
         self._hotkey_btn.setStyleSheet(f"""
@@ -139,9 +139,10 @@ class SettingsPage(QWidget):
                 color: {Colors.BG_DARK};
                 border: none;
                 border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 14px;
+                padding: 16px 24px;
+                font-size: 15px;
                 font-weight: 600;
+                min-height: 24px;
             }}
             QPushButton:hover {{
                 background-color: {Colors.ACCENT_SECONDARY};
@@ -156,8 +157,8 @@ class SettingsPage(QWidget):
         
         self._mode_combo = QComboBox()
         self._mode_combo.setStyleSheet(self._get_combo_style())
-        self._mode_combo.addItem("🌐 Online (Groq API)", True)
-        self._mode_combo.addItem("💻 Offline (Whisper local)", False)
+        self._mode_combo.addItem("Online (Groq API)", True)
+        self._mode_combo.addItem("Offline (Whisper local)", False)
         self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
         layout.addWidget(self._mode_combo)
         
@@ -165,12 +166,12 @@ class SettingsPage(QWidget):
         layout.addSpacing(10)
         
         # Auto paste toggle
-        self._auto_paste_check = QCheckBox("📋 Coller automatiquement le texte")
+        self._auto_paste_check = QCheckBox("Coller automatiquement le texte")
         self._auto_paste_check.stateChanged.connect(self._on_auto_paste_changed)
         layout.addWidget(self._auto_paste_check)
         
         # Sound toggle
-        self._sound_check = QCheckBox("🔊 Effets sonores")
+        self._sound_check = QCheckBox("Effets sonores")
         self._sound_check.stateChanged.connect(self._on_sound_changed)
         layout.addWidget(self._sound_check)
         
