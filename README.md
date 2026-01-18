@@ -1,56 +1,68 @@
-# 🎙️ V2T - Voice to Text
+# 🎙️ V2T 2.0 - Voice to Text
 
 <div align="center">
 
-**Transcription vocale en temps réel avec IA**
+**Transcription vocale intelligente avec interface moderne**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyQt6](https://img.shields.io/badge/UI-PyQt6-41CD52.svg)](https://pypi.org/project/PyQt6/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com)
 
-*Une application légère et élégante pour transcrire votre voix en texte avec un simple raccourci clavier*
+*Application élégante pour transcrire votre voix en texte avec un design futuriste violet/noir*
 
 </div>
 
 ---
 
-## ✨ Caractéristiques
+## ✨ Nouveautés V2.0
 
-- 🎯 **Hotkey personnalisable** - Contrôlez l'enregistrement avec votre touche préférée (F8 par défaut)
-- 🤖 **IA Groq Whisper** - Transcription précise et multilingue grâce au modèle Whisper Large V3
-- 🌐 **Multilingue** - Support de 8 langues (FR, EN, ES, DE, IT, PT, JA, ZH)
-- 📌 **Insertion automatique** - Le texte est collé directement dans votre application
-- 👁️ **Overlay visuel** - Animation de pulsation pour visualiser le niveau sonore
-- 🔧 **Interface de configuration** - UI moderne et intuitive avec Flet
-- 🔔 **Notifications système** - Feedback visuel et sonore
-- 🎨 **Customisable** - Icône personnalisée et image de skin
-- 🖥️ **Tray Icon** - Contrôle depuis la barre des tâches Windows
+| Fonctionnalité | Description |
+|----------------|-------------|
+| 🎨 **UI Premium** | Design moderne avec thème violet/noir et animations fluides |
+| 📊 **Waveform** | Visualisation audio temps réel avec gradient violet |
+| 🌐 **Mode Online** | Transcription rapide via Groq Whisper API |
+| 💻 **Mode Offline** | Transcription locale avec faster-whisper (modèle base) |
+| 📝 **Historique** | Sauvegarde et consultation de toutes vos transcriptions |
+| ⌨️ **Hotkey Global** | Raccourci clavier personnalisable (F8 par défaut) |
+| 📋 **Auto-Paste** | Le texte est automatiquement collé dans votre application |
+
+---
+
+## 🖼️ Aperçu
+
+L'interface suit un design futuriste avec :
+- Fond sombre `#0D0D0D`
+- Accents violets `#8B5CF6` à `#A855F7`
+- Bouton micro animé avec effet glow pulsant
+- Visualisation audio en barres verticales
+- Cartes avec bordures lumineuses
 
 ---
 
 ## 📋 Prérequis
 
-- **Python 3.8+**
-- **Windows 10/11** (compatible avec la barre des tâches)
+- **Python 3.10+**
+- **Windows 10/11**
 - **Microphone** fonctionnel
-- **Clé API Groq** (gratuite sur [console.groq.com](https://console.groq.com))
+- **Clé API Groq** (gratuite) pour le mode online
+- **GPU NVIDIA** (optionnel, pour accélérer le mode offline)
 
 ---
 
 ## 🚀 Installation
 
-### 1. Cloner ou télécharger le projet
+### 1. Cloner le projet
 
 ```bash
 git clone https://github.com/qurnt1/V2T.git
 cd V2T
 ```
 
-### 2. Créer un environnement virtuel (recommandé)
+### 2. Créer un environnement virtuel
 
 ```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
+venv\Scripts\activate
 ```
 
 ### 3. Installer les dépendances
@@ -59,15 +71,15 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-### 4. Configurer les variables d'environnement
+### 4. Configurer la clé API Groq
 
-Créez un fichier `.env` à la racine du projet :
+Créez un fichier `.env` à la racine :
 
 ```env
-key_groq_api = "votre_clé_api_groq_ici"
+key_groq_api = "votre_clé_api_groq"
 ```
 
-> 💡 Obtenez votre clé API gratuite sur [console.groq.com](https://console.groq.com)
+> 💡 Obtenez votre clé gratuite sur [console.groq.com](https://console.groq.com)
 
 ---
 
@@ -79,65 +91,37 @@ key_groq_api = "votre_clé_api_groq_ici"
 python main.py
 ```
 
-L'application se lance en mode service et ajoute une icône dans la barre des tâches.
+### Enregistrer et transcrire
 
-### Mode Service (Arrière-plan)
+1. **Appuyez sur F8** (ou cliquez sur le micro) pour démarrer
+2. Parlez dans votre microphone
+3. **Appuyez à nouveau sur F8** pour arrêter
+4. Le texte est transcrit et collé automatiquement !
 
-1. L'app écoute votre hotkey (F8 par défaut)
-2. **Appuyez sur F8** pour démarrer l'enregistrement
-3. Un son "pop" et un overlay visuel confirment le démarrage
-4. Parlez dans votre microphone
-5. **Appuyez à nouveau sur F8** pour terminer
-6. Le texte transcrit est automatiquement collé
+### Navigation
 
-### Paramètres
-
-Cliquez sur **"Paramètres"** dans le tray icon pour accéder à la configuration :
-
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| 🎙️ **Microphone** | Sélectionnez votre appareil audio | Auto-détection |
-| 🌍 **Langue** | Langue de transcription | Français |
-| 🔑 **API Groq** | Clé d'authentification API | - |
-| ⌨️ **Hotkey** | Touche pour enregistrer | F8 |
-| 🤖 **Groq Whisper** | Activer/désactiver l'IA | Activé |
-| 🔊 **Effets sonores** | Sons de début/fin | Activé |
+| Page | Description |
+|------|-------------|
+| 🏠 **Accueil** | Bouton micro et waveform |
+| 📝 **Transcription** | Animation pendant le traitement |
+| 📂 **Historique** | Toutes vos transcriptions sauvegardées |
+| ⚙️ **Paramètres** | Configuration de l'app |
 
 ---
 
-## 🔧 Configuration Avancée
+## ⚙️ Configuration
 
-### Fichier `settings.json`
+### Paramètres disponibles
 
-Les paramètres sont sauvegardés dans `data/settings.json` :
-
-```json
-{
-    "mic_index": null,
-    "use_ai": true,
-    "hotkey": "F8",
-    "language": "fr",
-    "sound_enabled": true
-}
-```
-
-### Fichier `.env`
-
-```env
-key_groq_api = "gsk_xxxxxxxxxxxxx"
-```
-
-> ⚠️ **N'exposez jamais votre clé API** - Ne la pushez pas sur GitHub !
-
----
-
-## 🎯 Cas d'usage
-
-- ✍️ **Rédaction** - Dictez vos emails, documents, messages
-- 📝 **Prise de notes** - Prenez des notes rapidement sans frapper au clavier
-- 🎮 **Gaming** - Commandes vocales dans vos jeux
-- 🔍 **Recherche** - Dictez vos requêtes sans les taper
-- ♿ **Accessibilité** - Alternative au clavier pour les utilisateurs ayant des besoins particuliers
+| Option | Description | Défaut |
+|--------|-------------|--------|
+| 🎙️ **Microphone** | Appareil audio | Auto-détection |
+| 🌍 **Langue** | FR, EN, ES, DE, IT, PT, JA, ZH | Français |
+| 🔑 **Clé API** | Clé Groq pour mode online | - |
+| ⌨️ **Raccourci** | Touche pour enregistrer | F8 |
+| 🤖 **Mode** | Online (Groq) ou Offline (Whisper) | Online |
+| 📋 **Auto-Paste** | Coller automatiquement | Activé |
+| 🔊 **Sons** | Feedback sonore | Activé |
 
 ---
 
@@ -145,138 +129,99 @@ key_groq_api = "gsk_xxxxxxxxxxxxx"
 
 ```
 V2T/
-├── main.py                 # Application principale
-├── requirements.txt        # Dépendances Python
-├── .env                    # Variables d'environnement (non versionné)
-├── README.md              # Ce fichier
+├── main.py                 # Point d'entrée
+├── requirements.txt        # Dépendances
+├── .env                    # Clé API (non versionné)
+│
+├── src/
+│   ├── app.py              # Application principale
+│   │
+│   ├── core/               # Logique métier
+│   │   ├── audio_recorder.py
+│   │   ├── groq_transcriber.py
+│   │   ├── whisper_transcriber.py
+│   │   └── hotkey_manager.py
+│   │
+│   ├── services/           # Services
+│   │   ├── settings.py
+│   │   ├── storage.py
+│   │   └── tray_icon.py
+│   │
+│   ├── ui/                 # Interface
+│   │   ├── main_window.py
+│   │   ├── pages/
+│   │   ├── widgets/
+│   │   └── styles/
+│   │
+│   └── utils/              # Utilitaires
+│       └── constants.py
+│
 └── data/
-    ├── settings.json      # Paramètres de l'app
-    ├── pop.mp3            # Son d'enregistrement
-    ├── icon.ico           # Icône de la tray
-    └── skin.png           # Image d'overlay
+    ├── settings.json       # Configuration
+    └── transcripts.db      # Historique (SQLite)
 ```
-
-### Modules principaux
-
-- **Flet** - Interface de configuration moderne
-- **SpeechRecognition** - Capture et traitement audio
-- **PyAudio** - Gestion du microphone
-- **Groq** - API de transcription IA
-- **keyboard** - Détection hotkey global
-- **pystray** - Icône système
-- **pyperclip** - Gestion du presse-papier
-- **pygame** - Lecture des sons
-- **Tkinter** - Overlay visuel transparent
 
 ---
 
-## ⚙️ Dépannage
+## 📦 Dépendances Principales
+
+| Package | Usage |
+|---------|-------|
+| **PyQt6** | Interface graphique moderne |
+| **sounddevice** | Capture audio (remplace PyAudio) |
+| **numpy/scipy** | Traitement signal pour waveform |
+| **groq** | API transcription online |
+| **faster-whisper** | Transcription offline locale |
+| **keyboard** | Hotkey global |
+| **peewee** | ORM SQLite pour l'historique |
+
+---
+
+## 🔧 Mode Offline
+
+Le mode offline utilise `faster-whisper` avec le modèle `base` (~150 MB).
+
+### Premier lancement offline
+
+Le modèle sera téléchargé automatiquement. Cela peut prendre quelques minutes.
+
+### Performance
+
+| Type | Temps (30s audio) |
+|------|-------------------|
+| **GPU NVIDIA** | ~2-3 secondes |
+| **CPU** | ~10-15 secondes |
+
+---
+
+## ⚠️ Dépannage
 
 ### L'app ne démarre pas
 
-1. Vérifiez que Python 3.8+ est installé
-2. Activez votre environnement virtuel
-3. Vérifiez l'installation des dépendances : `pip list`
-
-### Le microphone ne fonctionne pas
-
-1. Vérifiez que Windows a accès à votre micro
-2. Testez votre micro dans Paramètres > Son
-3. Sélectionnez le bon appareil dans les Paramètres V2T
-
-### Pas d'IA - Fallback Google Speech
-
-Si Groq ne fonctionne pas :
-- Vérifiez votre clé API
-- Vérifiez votre connexion internet
-- L'app utilise Google Speech en fallback automatique
-
-### L'overlay ne s'affiche pas
-
-- Assurez-vous que `skin.png` est présent dans `data/`
-- Ou utilisez le fallback (cercle rouge)
-
-### Texte ne se colle pas
-
-1. Vérifiez que l'app a les permissions système
-2. Testez le presse-papier : `Ctrl+V` manuellement
-3. Vérifiez que l'app cible est active
-
----
-
-## 📦 Dépendances
-
-Voir [requirements.txt](requirements.txt) pour la liste complète.
-
-```
-flet>=0.20.0
-SpeechRecognition>=3.10.0
-PyAudio>=0.2.11
-keyboard>=0.13.0
-groq>=0.4.0
-pyperclip>=1.8.2
-pystray>=0.19.0
-Pillow>=10.0.0
-pygame>=2.1.0
-plyer>=2.1.0
-python-dotenv>=1.0.0
+```bash
+pip install --upgrade PyQt6 sounddevice
 ```
 
----
+### Erreur audio
 
-## 🎨 Personnalisation
+1. Vérifiez les permissions microphone Windows
+2. Sélectionnez le bon micro dans Paramètres
 
-### Changer l'icône
+### Mode offline lent
 
-Remplacez `data/icon.ico` par votre propre fichier `.ico`
-
-### Ajouter un skin personnalisé
-
-Créez une image `skin.png` (format PNG avec transparence, ~256x256px) dans `data/`
-
-### Modifier les couleurs
-
-Éditez la classe `AppColors` dans [main.py](main.py#L662) :
-
-```python
-class AppColors:
-    BG = "#121212"      # Fond noir
-    ACCENT = "#00D2FC"  # Accent cyan
-```
-
----
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues !
-
-1. Fork le projet
-2. Créez une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit vos changements (`git commit -m 'Add AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
+- Utilisez un GPU NVIDIA avec CUDA
+- Ou activez le mode online (plus rapide)
 
 ---
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT. Voir [LICENSE](LICENSE) pour plus de détails.
-
----
-
-## 🔐 Sécurité
-
-⚠️ **Important** :
-- Ne commettez jamais votre clé API dans le dépôt
-- Utilisez `.env` et `.gitignore` pour les secrets
-- Régénérez votre clé si elle a été exposée
+MIT License - Voir [LICENSE](LICENSE)
 
 ---
 
 <div align="center">
 
-**[⬆ Retour au top](#️-v2t---voice-to-text)**
-
-Fait avec ❤️ par qurnt1
+**V2T 2.0** - Fait avec ❤️ par qurnt1
 
 </div>

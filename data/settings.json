@@ -1,7 +1,7 @@
 {
-    "mic_index": 1,
+    "mic_index": null,
     "use_ai": true,
-    "hotkey": "f8",
+    "hotkey": "pause",
     "language": "fr",
     "sound_enabled": true
 }
