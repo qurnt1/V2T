@@ -28,7 +28,10 @@ class TranscriptCard(QFrame):
     # Signals
     clicked = pyqtSignal(int)  # Emits transcript ID
     copy_requested = pyqtSignal(int)
+    clicked = pyqtSignal(int)  # Emits transcript ID
+    copy_requested = pyqtSignal(int)
     delete_requested = pyqtSignal(int)
+    correct_requested = pyqtSignal(int)
     
     def __init__(
         self, 
@@ -95,6 +98,28 @@ class TranscriptCard(QFrame):
         buttons_layout.setSpacing(8)
         buttons_layout.addStretch()
         
+        buttons_layout.addStretch()
+        
+        # Correct button (Magic Wand)
+        self._correct_btn = QPushButton("✨ Corriger")
+        self._correct_btn.setFont(QFont("Segoe UI", 9))
+        self._correct_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._correct_btn.clicked.connect(self._on_correct)
+        self._correct_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Colors.ACCENT_SECONDARY};
+                border: 1px solid {Colors.ACCENT_SECONDARY};
+                border-radius: 6px;
+                padding: 6px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {Colors.ACCENT_SECONDARY};
+                color: {Colors.BG_DARK};
+            }}
+        """)
+        buttons_layout.addWidget(self._correct_btn)
+
         # Copy button
         self._copy_btn = QPushButton("Copier")
         self._copy_btn.setFont(QFont("Segoe UI", 9))
@@ -166,7 +191,18 @@ class TranscriptCard(QFrame):
     
     def _on_delete(self) -> None:
         """Handle delete button click."""
+    def _on_delete(self) -> None:
+        """Handle delete button click."""
         self.delete_requested.emit(self._id)
+
+    def _on_correct(self) -> None:
+        """Handle correct button click."""
+        self.correct_requested.emit(self._id)
+        
+        # Animate button
+        self._correct_btn.setText("✨ Corrigé !")
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(2000, lambda: self._correct_btn.setText("✨ Corriger"))
     
     def mousePressEvent(self, event) -> None:
         """Handle card click."""

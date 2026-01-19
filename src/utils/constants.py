@@ -111,5 +111,8 @@ DEFAULT_SETTINGS = {
     "use_online": True,      # True = Groq, False = Offline Whisper
     "auto_paste": True,
     "sound_enabled": True,
+    "silence_detection_enabled": False,
+    "silence_threshold_seconds": 3,
+    "grammar_correction_enabled": False,
     "theme": "dark"
 }
