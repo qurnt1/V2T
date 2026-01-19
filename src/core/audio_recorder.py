@@ -7,6 +7,7 @@ import queue
 import tempfile
 import wave
 from typing import Optional, Callable, List
+import time
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +41,12 @@ class AudioRecorder:
         
         # Callback for real-time audio data (for waveform visualization)
         self._on_audio_data: Optional[Callable[[np.ndarray], None]] = None
+        self._on_silence_detected: Optional[Callable[[], None]] = None
+        
+        # Silence detection
+        self._last_sound_time = 0.0
+        self._silence_threshold_amp = 0.02  # Amplitude threshold (0.0 - 1.0)
+        self._silence_limit = 3.0  # Seconds before stopping
         
         # Queue for audio chunks (thread-safe)
         self._audio_queue: queue.Queue = queue.Queue()
@@ -85,6 +92,14 @@ class AudioRecorder:
         The callback receives numpy array of audio samples.
         """
         self._on_audio_data = callback
+        
+    def set_silence_callback(self, callback: Callable[[], None]) -> None:
+        """Set callback for silence detected."""
+        self._on_silence_detected = callback
+        
+    def update_silence_threshold(self, limit_seconds: float) -> None:
+        """Update silence limit in seconds."""
+        self._silence_limit = limit_seconds
     
     def _audio_callback(
         self, 
@@ -125,6 +140,7 @@ class AudioRecorder:
             with self._lock:
                 self._frames = []
                 self._is_recording = True
+                self._last_sound_time = time.time()  # Reset silence timer
             
             self._stream = sd.InputStream(
                 device=self.device_index,

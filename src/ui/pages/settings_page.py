@@ -173,7 +173,34 @@ class SettingsPage(QWidget):
         # Sound toggle
         self._sound_check = QCheckBox("Effets sonores")
         self._sound_check.stateChanged.connect(self._on_sound_changed)
+        self._sound_check.stateChanged.connect(self._on_sound_changed)
         layout.addWidget(self._sound_check)
+
+        # Silence Detection toggle
+        self._silence_check = QCheckBox("Arrêt automatique (Détection de silence)")
+        self._silence_check.stateChanged.connect(self._on_silence_changed)
+        layout.addWidget(self._silence_check)
+
+        # Silence threshold slider layout
+        self._silence_options = QWidget()
+        silence_layout = QVBoxLayout(self._silence_options)
+        silence_layout.setContentsMargins(20, 0, 0, 0)
+
+        # Label for slider value
+        self._silence_label = QLabel("Durée avant arrêt: 3 secondes")
+        self._silence_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY};")
+        silence_layout.addWidget(self._silence_label)
+
+        # Slider
+        from PyQt6.QtWidgets import QSlider
+        self._silence_slider = QSlider(Qt.Orientation.Horizontal)
+        self._silence_slider.setMinimum(2)
+        self._silence_slider.setMaximum(15)
+        self._silence_slider.setValue(3)
+        self._silence_slider.valueChanged.connect(self._on_silence_slider_changed)
+        silence_layout.addWidget(self._silence_slider)
+
+        layout.addWidget(self._silence_options)
         
         layout.addStretch()
     
@@ -327,7 +354,18 @@ class SettingsPage(QWidget):
         
         sound_enabled = settings.get("sound_enabled", True)
         self._sound_check.setChecked(sound_enabled)
+        self._sound_check.setChecked(sound_enabled)
         self._update_checkbox_style(self._sound_check, sound_enabled)
+
+        # Silence settings
+        silence_enabled = settings.get("silence_detection_enabled", False)
+        self._silence_check.setChecked(silence_enabled)
+        self._update_checkbox_style(self._silence_check, silence_enabled)
+        self._silence_options.setVisible(silence_enabled)
+
+        silence_seconds = settings.get("silence_threshold_seconds", 3)
+        self._silence_slider.setValue(silence_seconds)
+        self._silence_label.setText(f"Durée avant arrêt: {silence_seconds} secondes")
     
     def _on_mic_changed(self, index: int) -> None:
         mic_index = self._mic_combo.itemData(index)
@@ -429,7 +467,19 @@ class SettingsPage(QWidget):
     def _on_sound_changed(self, state: int) -> None:
         is_checked = state == Qt.CheckState.Checked.value
         settings.set("sound_enabled", is_checked)
+        is_checked = state == Qt.CheckState.Checked.value
+        settings.set("sound_enabled", is_checked)
         self._update_checkbox_style(self._sound_check, is_checked)
+
+    def _on_silence_changed(self, state: int) -> None:
+        is_checked = state == Qt.CheckState.Checked.value
+        settings.set("silence_detection_enabled", is_checked)
+        self._update_checkbox_style(self._silence_check, is_checked)
+        self._silence_options.setVisible(is_checked)
+
+    def _on_silence_slider_changed(self, value: int) -> None:
+        settings.set("silence_threshold_seconds", value)
+        self._silence_label.setText(f"Durée avant arrêt: {value} secondes")
     
     def _update_checkbox_style(self, checkbox: QCheckBox, checked: bool) -> None:
         """Update checkbox style based on state."""
