@@ -1,5 +1,5 @@
 """
-V2T 2.1 - Application Entry Point
+V2T 2.2 - Application Entry Point
 Main application class initializing all components.
 """
 import sys

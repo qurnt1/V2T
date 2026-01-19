@@ -1,4 +1,4 @@
-# 🎙️ V2T 2.1 - Voice to Text
+# 🎙️ V2T 2.2 - Voice to Text
 
 <div align="center">
 
@@ -14,17 +14,17 @@
 
 ---
 
-## 🆕 Nouveautés v2.1
+## 🆕 Nouveautés v2.2
 
 | Nouveauté | Description |
 |-----------|-------------|
+| 🧠 **Gestionnaire Whisper** | Téléchargez, installez et désinstallez les modèles (Tiny, Base, Small, Medium, Large) directement depuis les paramètres |
+| 📊 **Barre de Progression** | Suivi précis du téléchargement des modèles avec pourcentage et feedback visuel |
+| 🔔 **Notification Exit** | Notification native "V2T Fermé" lors de la fermeture de l'application |
+| 🛠️ **Correctifs** | Suppression des avertissements "Symlinks" sur Windows et corrections UI |
 | 🧵 **Threading corrigé** | Plus d'erreurs "Timers cannot be stopped from another thread" |
 | 🏠 **UX simplifiée** | Restez sur la page principale pendant la transcription (plus de popup) |
 | ✨ **Correction IA** | Corrigez l'orthographe/grammaire via l'IA Groq directement depuis l'historique |
-| 🔔 **Notifications Windows** | Feedback visuel lors de la correction (texte copié dans le presse-papier) |
-| 🗑️ **Supprimer tout** | Nouveau bouton pour effacer tout l'historique en un clic |
-| ⚡ **Feedback instantané** | "Transcription terminée (Copié !)" s'affiche directement sur l'écran principal |
-| 🎛️ **Paramètres compacts** | Interface repensée sans scroll, plus lisible |
 
 ---
 

@@ -1,5 +1,5 @@
 """
-V2T 2.1 - Whisper Local Transcriber
+V2T 2.2 - Whisper Local Transcriber
 Offline transcription using faster-whisper (CTranslate2).
 """
 import threading
