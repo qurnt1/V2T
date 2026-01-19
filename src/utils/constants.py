@@ -113,5 +113,6 @@ DEFAULT_SETTINGS = {
     "sound_enabled": True,
     "silence_detection_enabled": False,
     "silence_threshold_seconds": 3,
+    "grammar_correction_enabled": False,
     "theme": "dark"
 }

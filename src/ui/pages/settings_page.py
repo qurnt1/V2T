@@ -7,7 +7,7 @@ from typing import Optional, List
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox,
-    QLineEdit, QCheckBox, QFrame
+    QLineEdit, QCheckBox, QFrame, QScrollArea, QSlider
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QCursor
@@ -44,46 +44,66 @@ class SettingsPage(QWidget):
     
     def _setup_ui(self) -> None:
         """Setup the page layout."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # ===== Header =====
-        header = QHBoxLayout()
+        # ===== Header (fixed, not scrollable) =====
+        header_widget = QWidget()
+        header_widget.setStyleSheet(f"background-color: {Colors.BG_DARK};")
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(15, 15, 15, 10)
         
         self._back_btn = QPushButton("← Retour")
-        self._back_btn.setFont(QFont("Segoe UI", 11))
+        self._back_btn.setFont(QFont("Segoe UI", 10))
         self._back_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._back_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
                 color: {Colors.TEXT_SECONDARY};
                 border: none;
-                padding: 8px 12px;
+                padding: 6px 10px;
             }}
             QPushButton:hover {{
                 color: {Colors.ACCENT_PRIMARY};
             }}
         """)
         self._back_btn.clicked.connect(self.navigate_back.emit)
-        header.addWidget(self._back_btn)
+        header_layout.addWidget(self._back_btn)
         
-        header.addStretch()
+        header_layout.addStretch()
         
         title = QLabel("Paramètres")
-        title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {Colors.TEXT_PRIMARY};")
-        header.addWidget(title)
+        header_layout.addWidget(title)
         
-        header.addStretch()
+        header_layout.addStretch()
         
         spacer = QLabel()
-        spacer.setFixedWidth(80)
-        header.addWidget(spacer)
+        spacer.setFixedWidth(70)
+        header_layout.addWidget(spacer)
         
-        layout.addLayout(header)
+        main_layout.addWidget(header_widget)
         
-        # ===== Settings Sections =====
+        # ===== Scroll Area =====
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(f"""
+            QScrollArea {{
+                border: none;
+                background-color: {Colors.BG_DARK};
+            }}
+        """)
+        
+        # Container for scrollable content
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet(f"background-color: {Colors.BG_DARK};")
+        layout = QVBoxLayout(scroll_content)
+        layout.setContentsMargins(15, 10, 15, 20)
+        layout.setSpacing(12)
         
         # --- Microphone ---
         layout.addWidget(self._create_section_label("Microphone"))
@@ -107,6 +127,7 @@ class SettingsPage(QWidget):
         layout.addWidget(self._create_section_label("Clé API Groq"))
         
         api_layout = QHBoxLayout()
+        api_layout.setSpacing(8)
         self._api_input = QLineEdit()
         self._api_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._api_input.setPlaceholderText("gsk_xxxxxxxxxxxx")
@@ -139,10 +160,9 @@ class SettingsPage(QWidget):
                 color: {Colors.BG_DARK};
                 border: none;
                 border-radius: 8px;
-                padding: 16px 24px;
-                font-size: 15px;
+                padding: 12px 20px;
+                font-size: 13px;
                 font-weight: 600;
-                min-height: 24px;
             }}
             QPushButton:hover {{
                 background-color: {Colors.ACCENT_SECONDARY};
@@ -163,51 +183,72 @@ class SettingsPage(QWidget):
         layout.addWidget(self._mode_combo)
         
         # --- Toggles ---
-        layout.addSpacing(10)
+        layout.addSpacing(5)
         
         # Auto paste toggle
-        self._auto_paste_check = QCheckBox("Coller automatiquement le texte")
+        self._auto_paste_check = QCheckBox("Coller automatiquement")
         self._auto_paste_check.stateChanged.connect(self._on_auto_paste_changed)
         layout.addWidget(self._auto_paste_check)
         
         # Sound toggle
         self._sound_check = QCheckBox("Effets sonores")
         self._sound_check.stateChanged.connect(self._on_sound_changed)
-        self._sound_check.stateChanged.connect(self._on_sound_changed)
         layout.addWidget(self._sound_check)
 
         # Silence Detection toggle
-        self._silence_check = QCheckBox("Arrêt automatique (Détection de silence)")
+        self._silence_check = QCheckBox("Arrêt auto (silence)")
         self._silence_check.stateChanged.connect(self._on_silence_changed)
         layout.addWidget(self._silence_check)
+
+        # Grammar Correction toggle
+        self._grammar_check = QCheckBox("Correction orthographique")
+        self._grammar_check.stateChanged.connect(self._on_grammar_changed)
+        layout.addWidget(self._grammar_check)
 
         # Silence threshold slider layout
         self._silence_options = QWidget()
         silence_layout = QVBoxLayout(self._silence_options)
         silence_layout.setContentsMargins(20, 0, 0, 0)
+        silence_layout.setSpacing(5)
 
         # Label for slider value
-        self._silence_label = QLabel("Durée avant arrêt: 3 secondes")
-        self._silence_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY};")
+        self._silence_label = QLabel("Durée: 3 secondes")
+        self._silence_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY}; font-size: 12px;")
         silence_layout.addWidget(self._silence_label)
 
         # Slider
-        from PyQt6.QtWidgets import QSlider
         self._silence_slider = QSlider(Qt.Orientation.Horizontal)
         self._silence_slider.setMinimum(2)
         self._silence_slider.setMaximum(15)
         self._silence_slider.setValue(3)
+        self._silence_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {Colors.BG_INPUT};
+                height: 6px;
+                border-radius: 3px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {Colors.ACCENT_PRIMARY};
+                width: 16px;
+                height: 16px;
+                margin: -5px 0;
+                border-radius: 8px;
+            }}
+        """)
         self._silence_slider.valueChanged.connect(self._on_silence_slider_changed)
         silence_layout.addWidget(self._silence_slider)
 
         layout.addWidget(self._silence_options)
         
         layout.addStretch()
+        
+        scroll.setWidget(scroll_content)
+        main_layout.addWidget(scroll)
     
     def _create_section_label(self, text: str) -> QLabel:
         """Create a section label."""
         label = QLabel(text)
-        label.setFont(QFont("Segoe UI", 11))
+        label.setFont(QFont("Segoe UI", 10))
         label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY};")
         return label
     
@@ -218,16 +259,15 @@ class SettingsPage(QWidget):
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
                 border-radius: 8px;
-                padding: 14px 16px;
-                font-size: 14px;
-                min-height: 20px;
+                padding: 10px 12px;
+                font-size: 13px;
             }}
             QComboBox:hover {{
                 border-color: {Colors.ACCENT_PRIMARY};
             }}
             QComboBox::drop-down {{
                 border: none;
-                width: 30px;
+                width: 25px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {Colors.BG_CARD};
@@ -237,8 +277,8 @@ class SettingsPage(QWidget):
                 padding: 4px;
             }}
             QComboBox QAbstractItemView::item {{
-                padding: 8px 12px;
-                min-height: 24px;
+                padding: 6px 10px;
+                min-height: 20px;
             }}
         """
     
@@ -249,9 +289,8 @@ class SettingsPage(QWidget):
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
                 border-radius: 8px;
-                padding: 14px 16px;
-                font-size: 14px;
-                min-height: 20px;
+                padding: 10px 12px;
+                font-size: 13px;
             }}
             QLineEdit:focus {{
                 border-color: {Colors.ACCENT_PRIMARY};
@@ -265,9 +304,8 @@ class SettingsPage(QWidget):
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
                 border-radius: 8px;
-                padding: 14px 20px;
-                font-size: 14px;
-                min-height: 20px;
+                padding: 10px 16px;
+                font-size: 13px;
             }}
             QPushButton:hover {{
                 border-color: {Colors.ACCENT_PRIMARY};
@@ -275,36 +313,34 @@ class SettingsPage(QWidget):
         """
     
     def _get_checkbox_style_on(self) -> str:
-        # Style pour checkbox activé - VERT
         return f"""
             QCheckBox {{
                 color: {Colors.TEXT_PRIMARY};
-                font-size: 14px;
-                spacing: 12px;
-                padding: 10px 0;
+                font-size: 13px;
+                spacing: 10px;
+                padding: 6px 0;
             }}
             QCheckBox::indicator {{
-                width: 48px;
-                height: 26px;
-                border-radius: 13px;
+                width: 40px;
+                height: 22px;
+                border-radius: 11px;
                 border: none;
                 background-color: {Colors.SUCCESS};
             }}
         """
     
     def _get_checkbox_style_off(self) -> str:
-        # Style pour checkbox désactivé - ROUGE avec texte grisé
         return f"""
             QCheckBox {{
                 color: {Colors.TEXT_MUTED};
-                font-size: 14px;
-                spacing: 12px;
-                padding: 10px 0;
+                font-size: 13px;
+                spacing: 10px;
+                padding: 6px 0;
             }}
             QCheckBox::indicator {{
-                width: 48px;
-                height: 26px;
-                border-radius: 13px;
+                width: 40px;
+                height: 22px;
+                border-radius: 11px;
                 border: none;
                 background-color: {Colors.ERROR};
             }}
@@ -347,13 +383,12 @@ class SettingsPage(QWidget):
         use_online = settings.get("use_online", True)
         self._mode_combo.setCurrentIndex(0 if use_online else 1)
         
-        # Toggles - set values and update styles
+        # Toggles
         auto_paste = settings.get("auto_paste", True)
         self._auto_paste_check.setChecked(auto_paste)
         self._update_checkbox_style(self._auto_paste_check, auto_paste)
         
         sound_enabled = settings.get("sound_enabled", True)
-        self._sound_check.setChecked(sound_enabled)
         self._sound_check.setChecked(sound_enabled)
         self._update_checkbox_style(self._sound_check, sound_enabled)
 
@@ -365,7 +400,12 @@ class SettingsPage(QWidget):
 
         silence_seconds = settings.get("silence_threshold_seconds", 3)
         self._silence_slider.setValue(silence_seconds)
-        self._silence_label.setText(f"Durée avant arrêt: {silence_seconds} secondes")
+        self._silence_label.setText(f"Durée: {silence_seconds} secondes")
+
+        # Grammar correction settings
+        grammar_enabled = settings.get("grammar_correction_enabled", False)
+        self._grammar_check.setChecked(grammar_enabled)
+        self._update_checkbox_style(self._grammar_check, grammar_enabled)
     
     def _on_mic_changed(self, index: int) -> None:
         mic_index = self._mic_combo.itemData(index)
@@ -403,7 +443,7 @@ class SettingsPage(QWidget):
             return
         
         self._capturing_hotkey = True
-        self._hotkey_btn.setText("Appuyez sur une touche...")
+        self._hotkey_btn.setText("Appuyez...")
         self._hotkey_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {Colors.WARNING};
@@ -411,7 +451,7 @@ class SettingsPage(QWidget):
                 border: none;
                 border-radius: 8px;
                 padding: 12px 20px;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
             }}
         """)
@@ -446,7 +486,7 @@ class SettingsPage(QWidget):
                 border: none;
                 border-radius: 8px;
                 padding: 12px 20px;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -467,8 +507,6 @@ class SettingsPage(QWidget):
     def _on_sound_changed(self, state: int) -> None:
         is_checked = state == Qt.CheckState.Checked.value
         settings.set("sound_enabled", is_checked)
-        is_checked = state == Qt.CheckState.Checked.value
-        settings.set("sound_enabled", is_checked)
         self._update_checkbox_style(self._sound_check, is_checked)
 
     def _on_silence_changed(self, state: int) -> None:
@@ -479,7 +517,12 @@ class SettingsPage(QWidget):
 
     def _on_silence_slider_changed(self, value: int) -> None:
         settings.set("silence_threshold_seconds", value)
-        self._silence_label.setText(f"Durée avant arrêt: {value} secondes")
+        self._silence_label.setText(f"Durée: {value} secondes")
+
+    def _on_grammar_changed(self, state: int) -> None:
+        is_checked = state == Qt.CheckState.Checked.value
+        settings.set("grammar_correction_enabled", is_checked)
+        self._update_checkbox_style(self._grammar_check, is_checked)
     
     def _update_checkbox_style(self, checkbox: QCheckBox, checked: bool) -> None:
         """Update checkbox style based on state."""
