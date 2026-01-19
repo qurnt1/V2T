@@ -102,6 +102,9 @@ class V2TApp:
         self._tray_manager = self._init_tray()
         self._tray_manager.start()
         
+        # Pass tray manager to main window for notifications
+        self._main_window.set_tray_manager(self._tray_manager)
+        
         # Show window
         self._main_window.show()
         

@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, 
     QLabel, QPushButton, QSpacerItem, QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QCursor
 
 from src.utils.constants import Colors, UIConfig
@@ -22,6 +22,7 @@ class HomePage(QWidget):
     - App title and icon
     - Microphone button (start/stop recording)
     - Waveform visualization
+    - Transcription status feedback
     - Navigation buttons (Settings, History)
     """
     
@@ -34,6 +35,7 @@ class HomePage(QWidget):
         super().__init__(parent)
         
         self._is_recording = False
+        self._is_transcribing = False
         self._setup_ui()
     
     def _setup_ui(self) -> None:
@@ -134,6 +136,9 @@ class HomePage(QWidget):
     
     def _on_mic_click(self) -> None:
         """Handle microphone button click."""
+        if self._is_transcribing:
+            return  # Don't allow clicks while transcribing
+        
         self._is_recording = not self._is_recording
         self.set_recording(self._is_recording)
         self.recording_toggled.emit(self._is_recording)
@@ -148,13 +153,44 @@ class HomePage(QWidget):
             self._status_label.setStyleSheet(f"color: {Colors.ERROR};")
             self._hotkey_label.setText("Appuyez à nouveau pour arrêter")
         else:
+            if not self._is_transcribing:
+                self._status_label.setText("Appuyez pour enregistrer")
+                self._status_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY};")
+                self._hotkey_label.setText("ou appuyez sur F8")
+    
+    def set_transcribing(self, transcribing: bool) -> None:
+        """Update UI for transcribing state."""
+        self._is_transcribing = transcribing
+        
+        if transcribing:
+            self._status_label.setText("Transcription en cours...")
+            self._status_label.setStyleSheet(f"color: {Colors.ACCENT_PRIMARY};")
+            self._hotkey_label.setText("Veuillez patienter")
+            self._mic_button.setEnabled(False)
+        else:
             self._status_label.setText("Appuyez pour enregistrer")
             self._status_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY};")
             self._hotkey_label.setText("ou appuyez sur F8")
+            self._mic_button.setEnabled(True)
+    
+    def set_transcription_result(self, success: bool, message: str) -> None:
+        """Show transcription result feedback."""
+        self._is_transcribing = False
+        self._mic_button.setEnabled(True)
+        
+        if success:
+            self._status_label.setText("Transcription terminée (Copié !) ✓")
+            self._status_label.setStyleSheet(f"color: {Colors.SUCCESS};")
+        else:
+            self._status_label.setText(message)
+            self._status_label.setStyleSheet(f"color: {Colors.ERROR};")
+        
+        self._hotkey_label.setText("ou appuyez sur F8")
     
     def update_hotkey_text(self, hotkey: str) -> None:
         """Update the hotkey hint text."""
-        self._hotkey_label.setText(f"ou appuyez sur {hotkey}")
+        if not self._is_recording and not self._is_transcribing:
+            self._hotkey_label.setText(f"ou appuyez sur {hotkey}")
     
     def update_waveform(self, audio_data) -> None:
         """Update waveform with audio data."""

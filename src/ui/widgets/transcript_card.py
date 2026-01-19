@@ -3,13 +3,13 @@ V2T 2.0 - Transcript Card Widget
 Card component for displaying saved transcriptions.
 """
 from datetime import datetime
-from typing import Optional, Callable
+from typing import Optional
 
 from PyQt6.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, 
     QLabel, QPushButton, QWidget
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QCursor
 
 from src.utils.constants import Colors
@@ -21,13 +21,12 @@ class TranscriptCard(QFrame):
     Features:
     - Title, preview text, date, duration
     - Copy to clipboard button
+    - Correct grammar button
     - Delete button
     - Hover animations
     """
     
     # Signals
-    clicked = pyqtSignal(int)  # Emits transcript ID
-    copy_requested = pyqtSignal(int)
     clicked = pyqtSignal(int)  # Emits transcript ID
     copy_requested = pyqtSignal(int)
     delete_requested = pyqtSignal(int)
@@ -96,8 +95,6 @@ class TranscriptCard(QFrame):
         # Action buttons
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(8)
-        buttons_layout.addStretch()
-        
         buttons_layout.addStretch()
         
         # Correct button (Magic Wand)
@@ -191,8 +188,6 @@ class TranscriptCard(QFrame):
     
     def _on_delete(self) -> None:
         """Handle delete button click."""
-    def _on_delete(self) -> None:
-        """Handle delete button click."""
         self.delete_requested.emit(self._id)
 
     def _on_correct(self) -> None:
@@ -200,9 +195,15 @@ class TranscriptCard(QFrame):
         self.correct_requested.emit(self._id)
         
         # Animate button
-        self._correct_btn.setText("✨ Corrigé !")
+        self._correct_btn.setText("✨ Correction...")
+        self._correct_btn.setEnabled(False)
         from PyQt6.QtCore import QTimer
-        QTimer.singleShot(2000, lambda: self._correct_btn.setText("✨ Corriger"))
+        QTimer.singleShot(3000, self._reset_correct_button)
+    
+    def _reset_correct_button(self) -> None:
+        """Reset correct button state."""
+        self._correct_btn.setText("✨ Corriger")
+        self._correct_btn.setEnabled(True)
     
     def mousePressEvent(self, event) -> None:
         """Handle card click."""
