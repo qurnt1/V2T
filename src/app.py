@@ -3,7 +3,12 @@ V2T 2.1 - Application Entry Point
 Main application class initializing all components.
 """
 import sys
+import time
+import os
 from typing import Optional
+
+# Suppress HuggingFace symlinks warning on Windows
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase
@@ -85,6 +90,19 @@ class V2TApp:
     
     def _quit_app(self) -> None:
         """Quit the application (main thread)."""
+        # Show exit notification BEFORE stopping tray
+        if self._tray_manager:
+            self._tray_manager.show_notification(
+                "V2T Fermé",
+                "À bientôt !"
+            )
+            # Small delay to ensure notification is sent
+            QTimer.singleShot(300, self._do_quit)
+        else:
+            self._do_quit()
+    
+    def _do_quit(self) -> None:
+        """Actually perform the quit operation."""
         if self._tray_manager:
             self._tray_manager.stop()
         if self._main_window:
