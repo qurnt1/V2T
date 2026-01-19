@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Transcribing Page
+V2T 2.1 - Transcribing Page
 Shows transcription progress and result.
 """
 from typing import Optional

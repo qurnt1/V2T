@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Main Window
+V2T 2.1 - Main Window
 Central window managing all pages and navigation.
 """
 import threading
@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QStackedWidget, QWidget,
     QVBoxLayout, QSystemTrayIcon, QMenu
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QObject
 from PyQt6.QtGui import QIcon
 
 import pyperclip
@@ -19,7 +19,6 @@ import numpy as np
 from src.utils.constants import Colors, UIConfig, ICON_FILE
 from src.ui.styles.theme import get_main_stylesheet
 from src.ui.pages.home_page import HomePage
-from src.ui.pages.transcribing_page import TranscribingPage
 from src.ui.pages.history_page import HistoryPage
 from src.ui.pages.settings_page import SettingsPage
 from src.core.audio_recorder import AudioRecorder
@@ -39,19 +38,27 @@ class MainWindow(QMainWindow):
     # Internal signals for thread-safe UI updates
     _transcription_complete = pyqtSignal(str, bool)
     _audio_data_ready = pyqtSignal(object)
+    _hotkey_triggered = pyqtSignal()  # Thread-safe hotkey signal
+    _show_notification = pyqtSignal(str, str)  # title, message
     
     def __init__(self):
         super().__init__()
         
         self._audio_recorder: Optional[AudioRecorder] = None
         self._is_recording = False
+        self._is_transcribing = False
         self._current_audio_data: Optional[np.ndarray] = None
+        self._tray_manager = None
         
         self._setup_window()
         self._setup_pages()
         self._setup_connections()
         self._setup_hotkey()
         self._setup_audio()
+    
+    def set_tray_manager(self, tray_manager) -> None:
+        """Set the tray manager for notifications."""
+        self._tray_manager = tray_manager
     
     def _setup_window(self) -> None:
         """Setup main window properties."""
@@ -82,10 +89,6 @@ class MainWindow(QMainWindow):
         self._home_page = HomePage()
         self._stack.addWidget(self._home_page)
         
-        # Transcribing page
-        self._transcribing_page = TranscribingPage()
-        self._stack.addWidget(self._transcribing_page)
-        
         # History page
         self._history_page = HistoryPage()
         self._stack.addWidget(self._history_page)
@@ -104,29 +107,36 @@ class MainWindow(QMainWindow):
         self._home_page.navigate_settings.connect(self._show_settings)
         self._home_page.navigate_history.connect(self._show_history)
         
-        # Transcribing page
-        self._transcribing_page.cancelled.connect(self._on_transcription_cancelled)
-        self._transcribing_page.copy_requested.connect(self._copy_to_clipboard)
-        self._transcribing_page.done.connect(self._show_home)
-        
         # History page
         self._history_page.navigate_back.connect(self._show_home)
         self._history_page.text_copied.connect(self._copy_to_clipboard)
+        self._history_page.notification_requested.connect(self._on_notification_requested)
         
         # Settings page
         self._settings_page.navigate_back.connect(self._show_home)
         self._settings_page.settings_changed.connect(self._on_settings_changed)
         self._settings_page.hotkey_changed.connect(self._on_hotkey_changed)
         
-        # Internal signals
+        # Internal signals (thread-safe)
         self._transcription_complete.connect(self._on_transcription_result)
         self._audio_data_ready.connect(self._on_audio_data)
+        self._hotkey_triggered.connect(self._on_hotkey_main_thread)
+        self._show_notification.connect(self._on_show_notification)
     
     def _setup_hotkey(self) -> None:
         """Setup global hotkey."""
         hotkey = settings.get("hotkey", "F8")
-        hotkey_manager.register(hotkey, self._on_hotkey_pressed)
+        # Use a lambda that emits a signal instead of direct UI manipulation
+        hotkey_manager.register(hotkey, self._emit_hotkey_signal)
         self._home_page.update_hotkey_text(hotkey)
+    
+    def _emit_hotkey_signal(self) -> None:
+        """Emit hotkey signal from any thread (thread-safe)."""
+        self._hotkey_triggered.emit()
+    
+    def _on_hotkey_main_thread(self) -> None:
+        """Handle hotkey press in main thread."""
+        self._toggle_recording()
     
     def _setup_audio(self) -> None:
         """Setup audio recorder."""
@@ -140,11 +150,6 @@ class MainWindow(QMainWindow):
         """Navigate to home page."""
         self._stack.setCurrentWidget(self._home_page)
     
-    def _show_transcribing(self) -> None:
-        """Navigate to transcribing page."""
-        self._transcribing_page.start()
-        self._stack.setCurrentWidget(self._transcribing_page)
-    
     def _show_history(self) -> None:
         """Navigate to history page."""
         self._history_page.load_transcripts()
@@ -157,10 +162,6 @@ class MainWindow(QMainWindow):
     
     # === Recording ===
     
-    def _on_hotkey_pressed(self) -> None:
-        """Handle global hotkey press."""
-        self._toggle_recording()
-    
     def _on_recording_toggled(self, recording: bool) -> None:
         """Handle recording toggle from UI."""
         if recording:
@@ -170,6 +171,9 @@ class MainWindow(QMainWindow):
     
     def _toggle_recording(self) -> None:
         """Toggle recording state."""
+        if self._is_transcribing:
+            return  # Don't toggle while transcribing
+        
         if self._is_recording:
             self._stop_recording()
         else:
@@ -177,7 +181,7 @@ class MainWindow(QMainWindow):
     
     def _start_recording(self) -> None:
         """Start audio recording."""
-        if self._is_recording:
+        if self._is_recording or self._is_transcribing:
             return
         
         # Play start sound
@@ -209,7 +213,8 @@ class MainWindow(QMainWindow):
             
             if audio_data is not None and len(audio_data) > 0:
                 self._current_audio_data = audio_data
-                self._show_transcribing()
+                self._is_transcribing = True
+                self._home_page.set_transcribing(True)
                 self._start_transcription(audio_data)
             else:
                 # No audio recorded
@@ -261,9 +266,15 @@ class MainWindow(QMainWindow):
                         is_online=result.is_online
                     )
                     
+                    # Copy to clipboard
+                    try:
+                        pyperclip.copy(result.text)
+                    except Exception:
+                        pass
+                    
                     # Auto-paste if enabled
                     if settings.get("auto_paste", True):
-                        self._copy_and_paste(result.text)
+                        self._auto_paste(result.text)
                     
                     self._transcription_complete.emit(result.text, True)
                 else:
@@ -274,13 +285,32 @@ class MainWindow(QMainWindow):
         
         threading.Thread(target=transcribe, daemon=True).start()
     
+    def _auto_paste(self, text: str) -> None:
+        """Simulate Ctrl+V (runs in transcription thread)."""
+        try:
+            import time
+            time.sleep(0.05)
+            import keyboard
+            keyboard.press_and_release("ctrl+v")
+        except Exception as e:
+            print(f"[Clipboard] Error pasting: {e}")
+    
     def _on_transcription_result(self, text: str, success: bool) -> None:
         """Handle transcription result (main thread)."""
-        self._transcribing_page.set_result(text, success)
+        self._is_transcribing = False
+        
+        if success:
+            self._home_page.set_transcription_result(True, "Transcription terminée (Copié !)")
+        else:
+            self._home_page.set_transcription_result(False, f"Erreur: {text}")
+        
+        # Reset status after 3 seconds
+        QTimer.singleShot(3000, self._reset_transcription_status)
     
-    def _on_transcription_cancelled(self) -> None:
-        """Handle transcription cancellation."""
-        self._show_home()
+    def _reset_transcription_status(self) -> None:
+        """Reset transcription status label."""
+        if not self._is_recording and not self._is_transcribing:
+            self._home_page.set_transcribing(False)
     
     # === Clipboard ===
     
@@ -291,18 +321,16 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"[Clipboard] Error: {e}")
     
-    def _copy_and_paste(self, text: str) -> None:
-        """Copy text and simulate Ctrl+V."""
-        try:
-            pyperclip.copy(text)
-            
-            import time
-            time.sleep(0.05)
-            
-            import keyboard
-            keyboard.press_and_release("ctrl+v")
-        except Exception as e:
-            print(f"[Clipboard] Error pasting: {e}")
+    # === Notifications ===
+    
+    def _on_notification_requested(self, title: str, message: str) -> None:
+        """Handle notification request from other pages."""
+        self._show_notification.emit(title, message)
+    
+    def _on_show_notification(self, title: str, message: str) -> None:
+        """Show notification via tray (main thread)."""
+        if self._tray_manager:
+            self._tray_manager.show_notification(title, message)
     
     # === Sound ===
     
@@ -311,7 +339,7 @@ class MainWindow(QMainWindow):
         if not settings.get("sound_enabled", True):
             return
         
-        # Simple beep for now - could use pygame or sounddevice
+        # Simple beep for now
         try:
             import winsound
             winsound.Beep(800, 100)
@@ -334,7 +362,7 @@ class MainWindow(QMainWindow):
         hotkey_manager.update_hotkey(
             old_hotkey, 
             new_hotkey, 
-            self._on_hotkey_pressed
+            self._emit_hotkey_signal  # Use signal emitter, not direct callback
         )
         
         self._home_page.update_hotkey_text(new_hotkey)
@@ -385,7 +413,6 @@ class MainWindow(QMainWindow):
         
         # Cleanup pages
         self._home_page.cleanup()
-        self._transcribing_page.cleanup()
         
         # Accept close
         from PyQt6.QtWidgets import QApplication

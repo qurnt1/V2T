@@ -1,3 +1,3 @@
 """
-V2T 2.0 - UI Widgets Package
+V2T 2.1 - UI Widgets Package
 """

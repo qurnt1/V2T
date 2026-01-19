@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Application Entry Point
+V2T 2.1 - Application Entry Point
 Main application class initializing all components.
 """
 import sys
@@ -101,6 +101,9 @@ class V2TApp:
         # Initialize tray icon
         self._tray_manager = self._init_tray()
         self._tray_manager.start()
+        
+        # Pass tray manager to main window for notifications
+        self._main_window.set_tray_manager(self._tray_manager)
         
         # Show window
         self._main_window.show()

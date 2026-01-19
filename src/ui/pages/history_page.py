@@ -1,5 +1,5 @@
 """
-V2T 2.0 - History Page
+V2T 2.1 - History Page
 Displays saved transcriptions.
 """
 from typing import Optional, List
@@ -17,6 +17,8 @@ from src.ui.widgets.transcript_card import TranscriptCard
 from src.services.storage import storage, Transcript
 from src.core.groq_transcriber import groq_transcriber
 
+import pyperclip
+
 
 class HistoryPage(QWidget):
     """
@@ -25,12 +27,15 @@ class HistoryPage(QWidget):
     - Scrollable list of transcript cards
     - Copy to clipboard
     - Delete transcripts
+    - Delete all history
+    - Grammar correction with notification
     - Back navigation
     """
     
     # Signals
     navigate_back = pyqtSignal()
     text_copied = pyqtSignal(str)
+    notification_requested = pyqtSignal(str, str)  # title, message
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -68,18 +73,33 @@ class HistoryPage(QWidget):
         header.addStretch()
         
         # Title
-        title = QLabel("Saved Transcripts")
+        title = QLabel("Historique")
         title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {Colors.TEXT_PRIMARY};")
         header.addWidget(title)
         
         header.addStretch()
         
-        # Spacer for balance
-        spacer = QLabel()
-        spacer.setFixedWidth(80)
-        header.addWidget(spacer)
-        
+        # Delete all button
+        self._delete_all_btn = QPushButton("🗑️ Tout supprimer")
+        self._delete_all_btn.setFont(QFont("Segoe UI", 10))
+        self._delete_all_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._delete_all_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Colors.TEXT_MUTED};
+                border: 1px solid {Colors.BORDER_DEFAULT};
+                border-radius: 6px;
+                padding: 6px 10px;
+            }}
+            QPushButton:hover {{
+                background-color: {Colors.ERROR};
+                border-color: {Colors.ERROR};
+                color: white;
+            }}
+        """)
+        self._delete_all_btn.clicked.connect(self._on_delete_all)
+        header.addWidget(self._delete_all_btn)
         
         layout.addLayout(header)
         
@@ -218,27 +238,72 @@ class HistoryPage(QWidget):
                 
                 if count == 0:
                     self._empty_label.show()
+    
+    def _on_delete_all(self) -> None:
+        """Handle delete all button click."""
+        if len(self._cards) == 0:
+            return
+        
+        reply = QMessageBox.question(
+            self,
+            "Supprimer tout l'historique",
+            f"Êtes-vous sûr de vouloir supprimer les {len(self._cards)} transcriptions ?\n\nCette action est irréversible.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            # Delete all from storage
+            deleted_count = storage.clear_all()
+            
+            # Clear UI
+            self._clear_cards()
+            self._count_label.setText("0 transcriptions")
+            self._empty_label.show()
+            
+            # Show notification
+            self.notification_requested.emit(
+                "Historique supprimé",
+                f"{deleted_count} transcription(s) supprimée(s)"
+            )
 
     def _on_correct(self, transcript_id: int) -> None:
         """Handle correction request."""
         transcript = storage.get_by_id(transcript_id)
         if not transcript:
             return
+        
+        # Find the card to update its button
+        card = None
+        for c in self._cards:
+            if c.transcript_id == transcript_id:
+                card = c
+                break
             
         # Run in thread to avoid freezing UI
         import threading
         def run_correction():
             corrected_text = groq_transcriber.correct_grammar(transcript.text)
             if corrected_text:
-                # Emit signal to copy text (must be done in main thread really, 
-                # but pyqtSignal is thread safe)
+                # Copy to clipboard
+                try:
+                    pyperclip.copy(corrected_text)
+                except Exception:
+                    pass
+                
+                # Emit notification signal (thread-safe via Qt signals)
+                self.notification_requested.emit(
+                    "Texte corrigé",
+                    "Texte corrigé copié dans le presse-papier"
+                )
+                
+                # Also emit text_copied for legacy behavior
                 self.text_copied.emit(corrected_text)
         
         threading.Thread(target=run_correction, daemon=True).start()
 
     def _on_card_clicked(self, transcript_id: int) -> None:
-        """Handle card click - could show detail view."""
-        # For now, just copy the text
+        """Handle card click - copy the text."""
         self._on_copy(transcript_id)
     
     def refresh(self) -> None:

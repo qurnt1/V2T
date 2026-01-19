@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Audio Recorder
+V2T 2.1 - Audio Recorder
 Handles microphone capture using sounddevice.
 """
 import threading

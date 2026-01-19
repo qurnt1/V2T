@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Settings Manager
+V2T 2.1 - Settings Manager
 Handles loading and saving user preferences.
 """
 import json

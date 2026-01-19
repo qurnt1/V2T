@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Transcriber Interface
+V2T 2.1 - Transcriber Interface
 Abstract base class for transcription services.
 """
 from abc import ABC, abstractmethod

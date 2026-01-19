@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Hotkey Manager
+V2T 2.1 - Hotkey Manager
 Global keyboard shortcut handling.
 """
 import threading

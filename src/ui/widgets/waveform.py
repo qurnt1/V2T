@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Waveform Visualization Widget
+V2T 2.1 - Waveform Visualization Widget
 Displays real-time audio waveform with purple gradient.
 """
 import numpy as np

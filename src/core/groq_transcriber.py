@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Groq Whisper Transcriber
+V2T 2.1 - Groq Whisper Transcriber
 Online transcription using Groq's Whisper API.
 """
 import os
@@ -141,6 +141,54 @@ class GroqTranscriber(BaseTranscriber):
                 success=False,
                 error=str(e)
             )
+
+
+    def correct_grammar(self, text: str) -> Optional[str]:
+        """
+        Correct spelling and grammar of text using Groq's LLM.
+        
+        Args:
+            text: The text to correct
+            
+        Returns:
+            Corrected text, or None if correction failed
+        """
+        if not self.is_available():
+            print("[GroqTranscriber] API key not configured for grammar correction")
+            return None
+        
+        try:
+            client = self._get_client()
+            if not client:
+                return None
+            
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Tu es un correcteur orthographique et grammatical. "
+                            "Corrige l'orthographe et la grammaire du texte fourni. "
+                            "Garde la langue d'origine. "
+                            "Retourne UNIQUEMENT le texte corrigé, sans commentaires ni explications."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": text
+                    }
+                ],
+                temperature=0.0,
+                max_tokens=2048
+            )
+            
+            corrected = response.choices[0].message.content
+            return corrected.strip() if corrected else None
+            
+        except Exception as e:
+            print(f"[GroqTranscriber] Grammar correction error: {e}")
+            return None
 
 
 # Global instance

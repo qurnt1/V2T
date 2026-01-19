@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Settings Page
+V2T 2.1 - Settings Page
 Configuration options for the application.
 """
 from typing import Optional, List
@@ -7,7 +7,7 @@ from typing import Optional, List
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox,
-    QLineEdit, QCheckBox, QFrame, QScrollArea, QSlider
+    QLineEdit, QCheckBox, QFrame, QSlider
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QCursor
@@ -28,6 +28,7 @@ class SettingsPage(QWidget):
     - Hotkey configuration
     - Online/Offline mode toggle
     - Sound effects toggle
+    - Auto-stop on silence
     """
     
     # Signals
@@ -44,15 +45,13 @@ class SettingsPage(QWidget):
     
     def _setup_ui(self) -> None:
         """Setup the page layout."""
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
         
-        # ===== Header (fixed, not scrollable) =====
-        header_widget = QWidget()
-        header_widget.setStyleSheet(f"background-color: {Colors.BG_DARK};")
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(10, 10, 10, 8)
+        # ===== Header =====
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 5)
         
         self._back_btn = QPushButton("← Retour")
         self._back_btn.setFont(QFont("Segoe UI", 10))
@@ -69,41 +68,22 @@ class SettingsPage(QWidget):
             }}
         """)
         self._back_btn.clicked.connect(self.navigate_back.emit)
-        header_layout.addWidget(self._back_btn)
+        header.addWidget(self._back_btn)
         
-        header_layout.addStretch()
+        header.addStretch()
         
         title = QLabel("Paramètres")
         title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {Colors.TEXT_PRIMARY};")
-        header_layout.addWidget(title)
+        header.addWidget(title)
         
-        header_layout.addStretch()
+        header.addStretch()
         
         spacer = QLabel()
         spacer.setFixedWidth(70)
-        header_layout.addWidget(spacer)
+        header.addWidget(spacer)
         
-        main_layout.addWidget(header_widget)
-        
-        # ===== Scroll Area =====
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(f"""
-            QScrollArea {{
-                border: none;
-                background-color: {Colors.BG_DARK};
-            }}
-        """)
-        
-        # Container for scrollable content
-        scroll_content = QWidget()
-        scroll_content.setStyleSheet(f"background-color: {Colors.BG_DARK};")
-        layout = QVBoxLayout(scroll_content)
-        layout.setContentsMargins(15, 8, 15, 15)
-        layout.setSpacing(6)
+        layout.addLayout(header)
         
         # --- Microphone ---
         layout.addWidget(self._create_section_label("Microphone"))
@@ -134,7 +114,6 @@ class SettingsPage(QWidget):
         self._api_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._api_input.setPlaceholderText("gsk_xxx...")
         self._api_input.setStyleSheet(self._get_input_style())
-        self._api_input.setMaximumWidth(200)
         api_layout.addWidget(self._api_input, 1)
         
         self._api_save_btn = QPushButton("OK")
@@ -204,20 +183,15 @@ class SettingsPage(QWidget):
         self._silence_check.stateChanged.connect(self._on_silence_changed)
         layout.addWidget(self._silence_check)
 
-        # Grammar Correction toggle
-        self._grammar_check = QCheckBox("Correction orthographique")
-        self._grammar_check.stateChanged.connect(self._on_grammar_changed)
-        layout.addWidget(self._grammar_check)
-
-        # Silence threshold slider layout
+        # Silence threshold slider (immediately under the checkbox)
         self._silence_options = QWidget()
         silence_layout = QVBoxLayout(self._silence_options)
-        silence_layout.setContentsMargins(20, 0, 0, 0)
-        silence_layout.setSpacing(5)
+        silence_layout.setContentsMargins(25, 2, 0, 0)
+        silence_layout.setSpacing(3)
 
         # Label for slider value
         self._silence_label = QLabel("Durée: 3 secondes")
-        self._silence_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY}; font-size: 12px;")
+        self._silence_label.setStyleSheet(f"color: {Colors.TEXT_SECONDARY}; font-size: 11px;")
         silence_layout.addWidget(self._silence_label)
 
         # Slider
@@ -233,10 +207,10 @@ class SettingsPage(QWidget):
             }}
             QSlider::handle:horizontal {{
                 background: {Colors.ACCENT_PRIMARY};
-                width: 16px;
-                height: 16px;
-                margin: -5px 0;
-                border-radius: 8px;
+                width: 14px;
+                height: 14px;
+                margin: -4px 0;
+                border-radius: 7px;
             }}
         """)
         self._silence_slider.valueChanged.connect(self._on_silence_slider_changed)
@@ -244,10 +218,8 @@ class SettingsPage(QWidget):
 
         layout.addWidget(self._silence_options)
         
+        # Add stretch to push everything up
         layout.addStretch()
-        
-        scroll.setWidget(scroll_content)
-        main_layout.addWidget(scroll)
     
     def _create_section_label(self, text: str) -> QLabel:
         """Create a section label."""
@@ -307,9 +279,9 @@ class SettingsPage(QWidget):
                 background-color: {Colors.BG_CARD};
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
-                border-radius: 8px;
-                padding: 10px 16px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-size: 12px;
             }}
             QPushButton:hover {{
                 border-color: {Colors.ACCENT_PRIMARY};
@@ -322,7 +294,7 @@ class SettingsPage(QWidget):
                 color: {Colors.TEXT_PRIMARY};
                 font-size: 12px;
                 spacing: 8px;
-                padding: 4px 0;
+                padding: 3px 0;
             }}
             QCheckBox::indicator {{
                 width: 32px;
@@ -339,7 +311,7 @@ class SettingsPage(QWidget):
                 color: {Colors.TEXT_MUTED};
                 font-size: 12px;
                 spacing: 8px;
-                padding: 4px 0;
+                padding: 3px 0;
             }}
             QCheckBox::indicator {{
                 width: 32px;
@@ -405,11 +377,6 @@ class SettingsPage(QWidget):
         silence_seconds = settings.get("silence_threshold_seconds", 3)
         self._silence_slider.setValue(silence_seconds)
         self._silence_label.setText(f"Durée: {silence_seconds} secondes")
-
-        # Grammar correction settings
-        grammar_enabled = settings.get("grammar_correction_enabled", False)
-        self._grammar_check.setChecked(grammar_enabled)
-        self._update_checkbox_style(self._grammar_check, grammar_enabled)
     
     def _on_mic_changed(self, index: int) -> None:
         mic_index = self._mic_combo.itemData(index)
@@ -427,7 +394,7 @@ class SettingsPage(QWidget):
             from src.core.groq_transcriber import groq_transcriber
             groq_transcriber.set_api_key(api_key)
             
-            self._api_save_btn.setText("Sauvegardé ✓")
+            self._api_save_btn.setText("✓")
             self._api_save_btn.setStyleSheet(
                 self._get_button_style().replace(
                     Colors.BG_CARD, Colors.SUCCESS
@@ -439,7 +406,7 @@ class SettingsPage(QWidget):
             QTimer.singleShot(1500, self._reset_api_button)
     
     def _reset_api_button(self) -> None:
-        self._api_save_btn.setText("Sauvegarder")
+        self._api_save_btn.setText("OK")
         self._api_save_btn.setStyleSheet(self._get_button_style())
     
     def _on_hotkey_capture(self) -> None:
@@ -453,9 +420,9 @@ class SettingsPage(QWidget):
                 background-color: {Colors.WARNING};
                 color: {Colors.BG_DARK};
                 border: none;
-                border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 15px;
+                font-size: 12px;
                 font-weight: 600;
             }}
         """)
@@ -522,11 +489,6 @@ class SettingsPage(QWidget):
     def _on_silence_slider_changed(self, value: int) -> None:
         settings.set("silence_threshold_seconds", value)
         self._silence_label.setText(f"Durée: {value} secondes")
-
-    def _on_grammar_changed(self, state: int) -> None:
-        is_checked = state == Qt.CheckState.Checked.value
-        settings.set("grammar_correction_enabled", is_checked)
-        self._update_checkbox_style(self._grammar_check, is_checked)
     
     def _update_checkbox_style(self, checkbox: QCheckBox, checked: bool) -> None:
         """Update checkbox style based on state."""

@@ -1,3 +1,3 @@
 """
-V2T 2.0 - Core Package
+V2T 2.1 - Core Package
 """
