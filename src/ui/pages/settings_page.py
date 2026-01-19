@@ -48,14 +48,23 @@ class SettingsPage(QWidget):
     navigate_back = pyqtSignal()
     settings_changed = pyqtSignal()
     hotkey_changed = pyqtSignal(str)
+    _progress_updated = pyqtSignal(int)  # For thread-safe progress updates
+    _progress_text_updated = pyqtSignal(str)  # For thread-safe text updates
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         
         self._capturing_hotkey = False
         self._downloading_model = False
+        self._model_installed = False
         self._setup_ui()
+        self._connect_signals()
         self._load_current_settings()
+    
+    def _connect_signals(self) -> None:
+        """Connect internal signals."""
+        self._progress_updated.connect(self._on_progress_update)
+        self._progress_text_updated.connect(self._on_progress_text_update)
     
     def _setup_ui(self) -> None:
         """Setup the page layout."""
@@ -200,6 +209,8 @@ class SettingsPage(QWidget):
         self._download_btn.setStyleSheet(self._get_button_style())
         self._download_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._download_btn.clicked.connect(self._on_download_model)
+        self._download_btn.enterEvent = lambda e: self._on_download_btn_hover(True)
+        self._download_btn.leaveEvent = lambda e: self._on_download_btn_hover(False)
         model_row.addWidget(self._download_btn)
         
         whisper_layout.addLayout(model_row)
@@ -585,89 +596,86 @@ class SettingsPage(QWidget):
         return False
     
     def _update_model_status(self) -> None:
-        """Update the model status label."""
+        """Update the model status label and button."""
         model_id = self._model_combo.currentData()
         if not model_id:
             return
         
-        if self._is_model_installed(model_id):
+        self._model_installed = self._is_model_installed(model_id)
+        
+        if self._model_installed:
             self._model_status.setText(f"✅ Modèle installé")
             self._model_status.setStyleSheet(f"color: {Colors.SUCCESS};")
             self._download_btn.setText("✓ Installé")
-            self._download_btn.setEnabled(False)
+            self._download_btn.setEnabled(True)  # Keep enabled for uninstall on hover
+            self._download_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {Colors.SUCCESS};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 12px;
+                    font-size: 12px;
+                }}
+                QPushButton:hover {{
+                    background-color: {Colors.ERROR};
+                }}
+            """)
         else:
             self._model_status.setText(f"❌ Modèle non installé")
             self._model_status.setStyleSheet(f"color: {Colors.ERROR};")
             self._download_btn.setText("📥 Télécharger")
             self._download_btn.setEnabled(True)
+            self._download_btn.setStyleSheet(self._get_button_style())
+    
+    def _on_download_btn_hover(self, entered: bool) -> None:
+        """Handle hover on download button to show uninstall option."""
+        if self._model_installed and not self._downloading_model:
+            if entered:
+                self._download_btn.setText("🗑️ Désinstaller")
+            else:
+                self._download_btn.setText("✓ Installé")
     
     def _on_download_model(self) -> None:
-        """Start downloading the selected model."""
-        if self._downloading_model:
-            return
-        
+        """Handle download/uninstall button click."""
         model_id = self._model_combo.currentData()
         if not model_id:
             return
         
+        # If model is installed, uninstall it
+        if self._model_installed:
+            self._uninstall_model(model_id)
+            return
+        
+        # Otherwise, download the model
+        if self._downloading_model:
+            return
+        
         self._downloading_model = True
-        self._download_btn.setText("⏳ Téléchargement...")
+        self._download_btn.setText("⏳ 0%")
         self._download_btn.setEnabled(False)
+        self._download_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Colors.WARNING};
+                color: {Colors.BG_DARK};
+                border: none;
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }}
+        """)
         self._download_progress.setValue(0)
         self._download_progress.show()
-        self._progress_label.setText("0%")
+        self._progress_label.setText("Préparation...")
         self._progress_label.show()
         self._model_status.setText("Téléchargement en cours...")
         self._model_status.setStyleSheet(f"color: {Colors.WARNING};")
         
-        # Store reference for thread-safe updates
-        self._total_size = 0
-        self._downloaded_size = 0
-        
-        def update_progress(percent: int):
-            """Update progress from main thread."""
-            self._download_progress.setValue(percent)
-            self._progress_label.setText(f"{percent}%")
-        
         def download():
             try:
-                from huggingface_hub import snapshot_download, hf_hub_download
-                from huggingface_hub.utils import tqdm as hf_tqdm
-                import tqdm
-                
-                repo_id = f"Systran/faster-whisper-{model_id}"
-                
-                # Custom tqdm callback to track progress
-                class ProgressCallback(tqdm.tqdm):
-                    def __init__(self, *args, **kwargs):
-                        super().__init__(*args, **kwargs)
-                        self._last_percent = -1
-                    
-                    def update(self, n=1):
-                        super().update(n)
-                        if self.total:
-                            percent = int(self.n / self.total * 100)
-                            if percent != self._last_percent:
-                                self._last_percent = percent
-                                QTimer.singleShot(0, lambda p=percent: update_progress(p))
-                
-                # Patch tqdm for huggingface_hub
-                original_tqdm = tqdm.tqdm
-                tqdm.tqdm = ProgressCallback
-                
-                try:
-                    # Download all model files
-                    snapshot_download(
-                        repo_id=repo_id,
-                        local_dir_use_symlinks=False
-                    )
-                finally:
-                    # Restore original tqdm
-                    tqdm.tqdm = original_tqdm
-                
-                # Now load the model to verify
                 from faster_whisper import WhisperModel
                 
+                # Detect device
                 device = "cpu"
                 compute_type = "int8"
                 try:
@@ -678,16 +686,46 @@ class SettingsPage(QWidget):
                 except Exception:
                     pass
                 
+                # Download and load model - this will show progress in console
+                # We'll use a timer to poll for file existence
+                self._progress_updated.emit(10)
+                self._update_progress_text("Téléchargement du modèle...")
+                
                 model = WhisperModel(model_id, device=device, compute_type=compute_type)
+                
+                self._progress_updated.emit(100)
                 del model
                 
-                QTimer.singleShot(0, self._on_download_success)
+                self._on_download_complete(True)
                 
             except Exception as e:
                 print(f"[Settings] Download error: {e}")
-                QTimer.singleShot(0, lambda: self._on_download_error(str(e)))
+                self._on_download_complete(False, str(e))
         
         threading.Thread(target=download, daemon=True).start()
+    
+    def _update_progress_text(self, text: str) -> None:
+        """Update progress label text (called from thread)."""
+        self._progress_text_updated.emit(text)
+    
+    def _on_progress_text_update(self, text: str) -> None:
+        """Handle progress text update (main thread)."""
+        self._progress_label.setText(text)
+    
+    def _on_progress_update(self, percent: int) -> None:
+        """Handle progress update signal (main thread)."""
+        self._download_progress.setValue(percent)
+        self._download_btn.setText(f"⏳ {percent}%")
+        self._progress_label.setText(f"{percent}%")
+    
+    def _on_download_complete(self, success: bool, error: str = "") -> None:
+        """Handle download completion (called from thread)."""
+        # Use signal to update UI in main thread
+        from PyQt6.QtCore import QTimer
+        if success:
+            QTimer.singleShot(0, self._on_download_success)
+        else:
+            QTimer.singleShot(0, lambda: self._on_download_error(error))
     
     def _on_download_success(self) -> None:
         """Handle successful model download."""
@@ -703,8 +741,29 @@ class SettingsPage(QWidget):
         self._progress_label.hide()
         self._download_btn.setText("📥 Télécharger")
         self._download_btn.setEnabled(True)
-        self._model_status.setText(f"❌ Erreur: {error[:30]}...")
+        self._download_btn.setStyleSheet(self._get_button_style())
+        error_msg = error[:40] + "..." if len(error) > 40 else error
+        self._model_status.setText(f"❌ Erreur: {error_msg}")
         self._model_status.setStyleSheet(f"color: {Colors.ERROR};")
+    
+    def _uninstall_model(self, model_id: str) -> None:
+        """Uninstall (delete) a downloaded model."""
+        import shutil
+        
+        model_path = self._get_model_cache_path(model_id)
+        
+        try:
+            if model_path.exists():
+                shutil.rmtree(model_path)
+                self._model_status.setText("🗑️ Modèle désinstallé")
+                self._model_status.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
+            
+            # Update status after short delay
+            QTimer.singleShot(500, self._update_model_status)
+            
+        except Exception as e:
+            self._model_status.setText(f"❌ Erreur: {str(e)[:30]}...")
+            self._model_status.setStyleSheet(f"color: {Colors.ERROR};")
     
     def _on_auto_paste_changed(self, state: int) -> None:
         is_checked = state == Qt.CheckState.Checked.value

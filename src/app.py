@@ -4,7 +4,11 @@ Main application class initializing all components.
 """
 import sys
 import time
+import os
 from typing import Optional
+
+# Suppress HuggingFace symlinks warning on Windows
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase
