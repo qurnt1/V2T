@@ -8,12 +8,14 @@ from typing import Optional
 
 from src.utils.constants import TranscriptionConfig
 from src.core.transcriber import BaseTranscriber, TranscriptionResult
+from src.services.settings import settings
 
 
 class WhisperTranscriber(BaseTranscriber):
     """
     Offline transcription using faster-whisper.
     Uses local Whisper model for transcription without internet.
+    Model size is configurable via settings.
     """
     
     _instance: Optional["WhisperTranscriber"] = None
@@ -28,35 +30,45 @@ class WhisperTranscriber(BaseTranscriber):
                     cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self, model_size: str = None):
+    def __init__(self):
         """
         Initialize Whisper transcriber.
-        
-        Args:
-            model_size: Whisper model size (tiny, base, small, medium, large-v3)
+        Model size is loaded from settings.
         """
         if self._initialized:
             return
         
-        self._model_size = model_size or TranscriptionConfig.WHISPER_MODEL
         self._model = None
+        self._model_size = None
         self._model_loading = False
         self._model_loaded = False
         self._load_error: Optional[str] = None
         self._initialized = True
+    
+    def _get_configured_model(self) -> str:
+        """Get the model size from settings."""
+        return settings.get("whisper_model", TranscriptionConfig.WHISPER_MODEL)
     
     def _load_model(self) -> bool:
         """
         Load the Whisper model (lazy loading).
         Downloads model on first use if not cached.
         """
-        if self._model_loaded:
+        target_model = self._get_configured_model()
+        
+        # If model already loaded with correct size, return
+        if self._model_loaded and self._model_size == target_model:
             return True
+        
+        # If a different model is loaded, unload it first
+        if self._model_loaded and self._model_size != target_model:
+            self.unload_model()
         
         if self._model_loading:
             return False
         
         self._model_loading = True
+        self._model_size = target_model
         
         try:
             from faster_whisper import WhisperModel
@@ -128,7 +140,7 @@ class WhisperTranscriber(BaseTranscriber):
     
     @property
     def name(self) -> str:
-        return f"Whisper Local ({self._model_size})"
+        return f"Whisper Local ({self._model_size or 'not loaded'})"
     
     @property
     def load_error(self) -> Optional[str]:
@@ -215,6 +227,7 @@ class WhisperTranscriber(BaseTranscriber):
             del self._model
             self._model = None
             self._model_loaded = False
+            self._model_size = None
             
             # Try to free GPU memory via ctranslate2
             try:

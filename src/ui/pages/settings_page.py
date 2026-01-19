@@ -2,20 +2,32 @@
 V2T 2.1 - Settings Page
 Configuration options for the application.
 """
+import threading
+from pathlib import Path
 from typing import Optional, List
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox,
-    QLineEdit, QCheckBox, QFrame, QSlider
+    QLineEdit, QCheckBox, QFrame, QSlider, QProgressBar
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QCursor
 
 from src.utils.constants import Colors, TranscriptionConfig
 from src.services.settings import settings
 from src.core.audio_recorder import AudioRecorder
 from src.core.hotkey_manager import hotkey_manager
+
+
+# Whisper model configurations
+WHISPER_MODELS = {
+    "tiny": {"label": "Tiny (Ultra rapide)", "size": "~75 MB"},
+    "base": {"label": "Base (Rapide)", "size": "~150 MB"},
+    "small": {"label": "Small (Équilibré)", "size": "~500 MB"},
+    "medium": {"label": "Medium (Précis)", "size": "~1.5 GB"},
+    "large-v3": {"label": "Large (Très précis)", "size": "~3 GB"},
+}
 
 
 class SettingsPage(QWidget):
@@ -27,6 +39,7 @@ class SettingsPage(QWidget):
     - API key input
     - Hotkey configuration
     - Online/Offline mode toggle
+    - Whisper model selection (offline mode)
     - Sound effects toggle
     - Auto-stop on silence
     """
@@ -40,6 +53,7 @@ class SettingsPage(QWidget):
         super().__init__(parent)
         
         self._capturing_hotkey = False
+        self._downloading_model = False
         self._setup_ui()
         self._load_current_settings()
     
@@ -47,7 +61,7 @@ class SettingsPage(QWidget):
         """Setup the page layout."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
         
         # ===== Header =====
         header = QHBoxLayout()
@@ -165,8 +179,60 @@ class SettingsPage(QWidget):
         self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
         layout.addWidget(self._mode_combo)
         
+        # --- Whisper Model Options (visible only in offline mode) ---
+        self._whisper_options = QWidget()
+        whisper_layout = QVBoxLayout(self._whisper_options)
+        whisper_layout.setContentsMargins(0, 4, 0, 0)
+        whisper_layout.setSpacing(6)
+        
+        # Model selection row
+        model_row = QHBoxLayout()
+        model_row.setSpacing(8)
+        
+        self._model_combo = QComboBox()
+        self._model_combo.setStyleSheet(self._get_combo_style())
+        for model_id, info in WHISPER_MODELS.items():
+            self._model_combo.addItem(f"{info['label']} ({info['size']})", model_id)
+        self._model_combo.currentIndexChanged.connect(self._on_model_changed)
+        model_row.addWidget(self._model_combo, 1)
+        
+        self._download_btn = QPushButton("📥 Télécharger")
+        self._download_btn.setStyleSheet(self._get_button_style())
+        self._download_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._download_btn.clicked.connect(self._on_download_model)
+        model_row.addWidget(self._download_btn)
+        
+        whisper_layout.addLayout(model_row)
+        
+        # Model status label
+        self._model_status = QLabel("⏳ Vérification...")
+        self._model_status.setFont(QFont("Segoe UI", 10))
+        self._model_status.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
+        whisper_layout.addWidget(self._model_status)
+        
+        # Download progress bar (hidden by default)
+        self._download_progress = QProgressBar()
+        self._download_progress.setRange(0, 0)  # Indeterminate
+        self._download_progress.setStyleSheet(f"""
+            QProgressBar {{
+                background-color: {Colors.BG_INPUT};
+                border: none;
+                border-radius: 4px;
+                height: 8px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {Colors.ACCENT_PRIMARY};
+                border-radius: 4px;
+            }}
+        """)
+        self._download_progress.hide()
+        whisper_layout.addWidget(self._download_progress)
+        
+        layout.addWidget(self._whisper_options)
+        self._whisper_options.hide()  # Hidden by default (online mode)
+        
         # --- Toggles ---
-        layout.addSpacing(5)
+        layout.addSpacing(3)
         
         # Auto paste toggle
         self._auto_paste_check = QCheckBox("Coller automatiquement")
@@ -286,6 +352,9 @@ class SettingsPage(QWidget):
             QPushButton:hover {{
                 border-color: {Colors.ACCENT_PRIMARY};
             }}
+            QPushButton:disabled {{
+                opacity: 0.5;
+            }}
         """
     
     def _get_checkbox_style_on(self) -> str:
@@ -358,6 +427,15 @@ class SettingsPage(QWidget):
         # Mode
         use_online = settings.get("use_online", True)
         self._mode_combo.setCurrentIndex(0 if use_online else 1)
+        self._whisper_options.setVisible(not use_online)
+        
+        # Whisper model
+        current_model = settings.get("whisper_model", "base")
+        for i in range(self._model_combo.count()):
+            if self._model_combo.itemData(i) == current_model:
+                self._model_combo.setCurrentIndex(i)
+                break
+        self._update_model_status()
         
         # Toggles
         auto_paste = settings.get("auto_paste", True)
@@ -402,7 +480,6 @@ class SettingsPage(QWidget):
             )
             
             # Reset after delay
-            from PyQt6.QtCore import QTimer
             QTimer.singleShot(1500, self._reset_api_button)
     
     def _reset_api_button(self) -> None:
@@ -428,7 +505,6 @@ class SettingsPage(QWidget):
         """)
         
         # Capture hotkey in thread
-        import threading
         def capture():
             try:
                 key = hotkey_manager.wait_for_key(timeout=5.0)
@@ -468,7 +544,113 @@ class SettingsPage(QWidget):
     def _on_mode_changed(self, index: int) -> None:
         use_online = self._mode_combo.itemData(index)
         settings.set("use_online", use_online)
+        self._whisper_options.setVisible(not use_online)
+        if not use_online:
+            self._update_model_status()
         self.settings_changed.emit()
+    
+    def _on_model_changed(self, index: int) -> None:
+        model_id = self._model_combo.itemData(index)
+        settings.set("whisper_model", model_id)
+        self._update_model_status()
+        self.settings_changed.emit()
+    
+    def _get_model_cache_path(self, model_id: str) -> Path:
+        """Get the expected cache path for a whisper model."""
+        # faster-whisper uses huggingface cache
+        cache_dir = Path.home() / ".cache" / "huggingface" / "hub"
+        # Model folder pattern for faster-whisper
+        model_folder = f"models--Systran--faster-whisper-{model_id}"
+        return cache_dir / model_folder
+    
+    def _is_model_installed(self, model_id: str) -> bool:
+        """Check if a whisper model is already downloaded."""
+        model_path = self._get_model_cache_path(model_id)
+        if model_path.exists():
+            # Check for actual model files in snapshots
+            snapshots = model_path / "snapshots"
+            if snapshots.exists():
+                for snapshot in snapshots.iterdir():
+                    if (snapshot / "model.bin").exists():
+                        return True
+        return False
+    
+    def _update_model_status(self) -> None:
+        """Update the model status label."""
+        model_id = self._model_combo.currentData()
+        if not model_id:
+            return
+        
+        if self._is_model_installed(model_id):
+            self._model_status.setText(f"✅ Modèle installé")
+            self._model_status.setStyleSheet(f"color: {Colors.SUCCESS};")
+            self._download_btn.setText("✓ Installé")
+            self._download_btn.setEnabled(False)
+        else:
+            self._model_status.setText(f"❌ Modèle non installé")
+            self._model_status.setStyleSheet(f"color: {Colors.ERROR};")
+            self._download_btn.setText("📥 Télécharger")
+            self._download_btn.setEnabled(True)
+    
+    def _on_download_model(self) -> None:
+        """Start downloading the selected model."""
+        if self._downloading_model:
+            return
+        
+        model_id = self._model_combo.currentData()
+        if not model_id:
+            return
+        
+        self._downloading_model = True
+        self._download_btn.setText("⏳ Téléchargement...")
+        self._download_btn.setEnabled(False)
+        self._download_progress.show()
+        self._model_status.setText("Téléchargement en cours...")
+        self._model_status.setStyleSheet(f"color: {Colors.WARNING};")
+        
+        def download():
+            try:
+                # Import and load model - this triggers download
+                from faster_whisper import WhisperModel
+                
+                # Try to detect CUDA
+                device = "cpu"
+                compute_type = "int8"
+                try:
+                    import ctranslate2
+                    if "cuda" in ctranslate2.get_supported_compute_types("cuda"):
+                        device = "cuda"
+                        compute_type = "float16"
+                except Exception:
+                    pass
+                
+                # This will download the model
+                model = WhisperModel(model_id, device=device, compute_type=compute_type)
+                del model  # Free memory after download
+                
+                # Update UI from main thread
+                QTimer.singleShot(0, self._on_download_success)
+                
+            except Exception as e:
+                print(f"[Settings] Download error: {e}")
+                QTimer.singleShot(0, lambda: self._on_download_error(str(e)))
+        
+        threading.Thread(target=download, daemon=True).start()
+    
+    def _on_download_success(self) -> None:
+        """Handle successful model download."""
+        self._downloading_model = False
+        self._download_progress.hide()
+        self._update_model_status()
+    
+    def _on_download_error(self, error: str) -> None:
+        """Handle model download error."""
+        self._downloading_model = False
+        self._download_progress.hide()
+        self._download_btn.setText("📥 Télécharger")
+        self._download_btn.setEnabled(True)
+        self._model_status.setText(f"❌ Erreur: {error[:30]}...")
+        self._model_status.setStyleSheet(f"color: {Colors.ERROR};")
     
     def _on_auto_paste_changed(self, state: int) -> None:
         is_checked = state == Qt.CheckState.Checked.value
