@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Constants and Configuration
+V2T 2.1 - Constants and Configuration
 """
 import os
 from pathlib import Path

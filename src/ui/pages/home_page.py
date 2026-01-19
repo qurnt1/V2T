@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Home Page
+V2T 2.1 - Home Page
 Main recording screen with microphone button and waveform.
 """
 from typing import Optional, Callable

@@ -1,4 +1,4 @@
-# 🎙️ V2T 2.0 - Voice to Text
+# 🎙️ V2T 2.1 - Voice to Text
 
 <div align="center">
 
@@ -11,6 +11,20 @@
 *Application desktop élégante pour transcrire votre voix en texte avec un design futuriste violet/noir*
 
 </div>
+
+---
+
+## 🆕 Nouveautés v2.1
+
+| Nouveauté | Description |
+|-----------|-------------|
+| 🧵 **Threading corrigé** | Plus d'erreurs "Timers cannot be stopped from another thread" |
+| 🏠 **UX simplifiée** | Restez sur la page principale pendant la transcription (plus de popup) |
+| ✨ **Correction IA** | Corrigez l'orthographe/grammaire via l'IA Groq directement depuis l'historique |
+| 🔔 **Notifications Windows** | Feedback visuel lors de la correction (texte copié dans le presse-papier) |
+| 🗑️ **Supprimer tout** | Nouveau bouton pour effacer tout l'historique en un clic |
+| ⚡ **Feedback instantané** | "Transcription terminée (Copié !)" s'affiche directement sur l'écran principal |
+| 🎛️ **Paramètres compacts** | Interface repensée sans scroll, plus lisible |
 
 ---
 
@@ -111,9 +125,8 @@ python main.py
 
 | Page | Description |
 |------|-------------|
-| 🏠 **Accueil** | Bouton micro et waveform |
-| 📝 **Transcription** | Animation pendant le traitement |
-| 📂 **Historique** | Transcriptions sauvegardées |
+| 🏠 **Accueil** | Bouton micro, waveform et statut de transcription |
+| 📂 **Historique** | Transcriptions sauvegardées avec correction IA |
 | ⚙️ **Paramètres** | Configuration de l'app |
 
 ---
@@ -129,6 +142,7 @@ python main.py
 | **Mode** | Online (Groq) ou Offline (Whisper) | Online |
 | **Auto-Paste** | Coller automatiquement | ✅ Activé |
 | **Sons** | Feedback sonore | ✅ Activé |
+| **Arrêt auto** | Arrêter après silence | ❌ Désactivé |
 
 ---
 
@@ -145,7 +159,7 @@ V2T/
 │   │
 │   ├── core/               # Logique métier
 │   │   ├── audio_recorder.py
-│   │   ├── groq_transcriber.py
+│   │   ├── groq_transcriber.py   # + correct_grammar()
 │   │   ├── whisper_transcriber.py
 │   │   ├── hotkey_manager.py
 │   │   └── transcriber.py
@@ -160,8 +174,7 @@ V2T/
 │   │   ├── pages/
 │   │   │   ├── home_page.py
 │   │   │   ├── history_page.py
-│   │   │   ├── settings_page.py
-│   │   │   └── transcribing_page.py
+│   │   │   └── settings_page.py
 │   │   ├── widgets/
 │   │   │   ├── mic_button.py
 │   │   │   ├── waveform.py
@@ -186,13 +199,14 @@ V2T/
 | **PyQt6** | Interface graphique moderne |
 | **sounddevice** | Capture audio |
 | **numpy** | Traitement signal pour waveform |
-| **groq** | API transcription online |
+| **groq** | API transcription online + correction IA |
 | **faster-whisper** | Transcription offline locale |
 | **torch** | Support GPU pour faster-whisper |
 | **keyboard** | Hotkey global |
 | **pystray** | Icône System Tray |
 | **peewee** | ORM SQLite pour l'historique |
 | **Pillow** | Génération icône tray |
+| **pyperclip** | Copie presse-papier |
 
 ---
 
@@ -231,10 +245,6 @@ pip install --upgrade PyQt6 sounddevice
 - Utilisez un GPU NVIDIA avec CUDA
 - Ou activez le mode online (plus rapide)
 
-### Erreur "Timers cannot be started from another thread"
-
-Ce bug a été corrigé dans la version actuelle avec `TrayBridge`.
-
 ---
 
 ## 📝 Licence
@@ -245,6 +255,6 @@ MIT License - Voir [LICENSE](LICENSE)
 
 <div align="center">
 
-**V2T 2.0** - Fait avec ❤️ par qurnt1
+**V2T 2.1** - Fait avec ❤️ par qurnt1
 
 </div>

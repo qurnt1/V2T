@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Settings Page
+V2T 2.1 - Settings Page
 Configuration options for the application.
 """
 from typing import Optional, List

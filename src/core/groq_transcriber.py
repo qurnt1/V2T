@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Groq Whisper Transcriber
+V2T 2.1 - Groq Whisper Transcriber
 Online transcription using Groq's Whisper API.
 """
 import os

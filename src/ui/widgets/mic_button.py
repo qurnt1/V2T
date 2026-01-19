@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Animated Microphone Button
+V2T 2.1 - Animated Microphone Button
 Large circular button with glow effect and animations.
 """
 from typing import Optional

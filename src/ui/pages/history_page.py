@@ -1,5 +1,5 @@
 """
-V2T 2.0 - History Page
+V2T 2.1 - History Page
 Displays saved transcriptions.
 """
 from typing import Optional, List

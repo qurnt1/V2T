@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Transcript Card Widget
+V2T 2.1 - Transcript Card Widget
 Card component for displaying saved transcriptions.
 """
 from datetime import datetime

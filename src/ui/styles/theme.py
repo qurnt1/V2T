@@ -1,5 +1,5 @@
 """
-V2T 2.0 - PyQt6 Theme & Stylesheets
+V2T 2.1 - PyQt6 Theme & Stylesheets
 """
 from src.utils.constants import Colors, UIConfig
 

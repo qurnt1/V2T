@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Main Window
+V2T 2.1 - Main Window
 Central window managing all pages and navigation.
 """
 import threading

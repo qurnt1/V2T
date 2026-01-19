@@ -1,5 +1,5 @@
 """
-V2T 2.0 - UI Styles Package
+V2T 2.1 - UI Styles Package
 """
 from .theme import get_main_stylesheet, get_mic_button_style, get_card_style
 

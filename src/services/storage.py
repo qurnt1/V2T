@@ -1,5 +1,5 @@
 """
-V2T 2.0 - Database Storage
+V2T 2.1 - Database Storage
 SQLite database for storing transcription history.
 """
 from datetime import datetime

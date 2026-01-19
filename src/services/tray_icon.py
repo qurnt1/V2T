@@ -1,5 +1,5 @@
 """
-V2T 2.0 - System Tray Icon
+V2T 2.1 - System Tray Icon
 Provides system tray icon with menu for quick access.
 """
 import threading
