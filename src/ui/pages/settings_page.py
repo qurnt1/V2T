@@ -212,7 +212,9 @@ class SettingsPage(QWidget):
         
         # Download progress bar (hidden by default)
         self._download_progress = QProgressBar()
-        self._download_progress.setRange(0, 0)  # Indeterminate
+        self._download_progress.setRange(0, 100)
+        self._download_progress.setValue(0)
+        self._download_progress.setTextVisible(False)
         self._download_progress.setStyleSheet(f"""
             QProgressBar {{
                 background-color: {Colors.BG_INPUT};
@@ -227,6 +229,13 @@ class SettingsPage(QWidget):
         """)
         self._download_progress.hide()
         whisper_layout.addWidget(self._download_progress)
+        
+        # Progress percentage label
+        self._progress_label = QLabel("")
+        self._progress_label.setFont(QFont("Segoe UI", 9))
+        self._progress_label.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
+        self._progress_label.hide()
+        whisper_layout.addWidget(self._progress_label)
         
         layout.addWidget(self._whisper_options)
         self._whisper_options.hide()  # Hidden by default (online mode)
@@ -604,16 +613,61 @@ class SettingsPage(QWidget):
         self._downloading_model = True
         self._download_btn.setText("⏳ Téléchargement...")
         self._download_btn.setEnabled(False)
+        self._download_progress.setValue(0)
         self._download_progress.show()
+        self._progress_label.setText("0%")
+        self._progress_label.show()
         self._model_status.setText("Téléchargement en cours...")
         self._model_status.setStyleSheet(f"color: {Colors.WARNING};")
         
+        # Store reference for thread-safe updates
+        self._total_size = 0
+        self._downloaded_size = 0
+        
+        def update_progress(percent: int):
+            """Update progress from main thread."""
+            self._download_progress.setValue(percent)
+            self._progress_label.setText(f"{percent}%")
+        
         def download():
             try:
-                # Import and load model - this triggers download
+                from huggingface_hub import snapshot_download, hf_hub_download
+                from huggingface_hub.utils import tqdm as hf_tqdm
+                import tqdm
+                
+                repo_id = f"Systran/faster-whisper-{model_id}"
+                
+                # Custom tqdm callback to track progress
+                class ProgressCallback(tqdm.tqdm):
+                    def __init__(self, *args, **kwargs):
+                        super().__init__(*args, **kwargs)
+                        self._last_percent = -1
+                    
+                    def update(self, n=1):
+                        super().update(n)
+                        if self.total:
+                            percent = int(self.n / self.total * 100)
+                            if percent != self._last_percent:
+                                self._last_percent = percent
+                                QTimer.singleShot(0, lambda p=percent: update_progress(p))
+                
+                # Patch tqdm for huggingface_hub
+                original_tqdm = tqdm.tqdm
+                tqdm.tqdm = ProgressCallback
+                
+                try:
+                    # Download all model files
+                    snapshot_download(
+                        repo_id=repo_id,
+                        local_dir_use_symlinks=False
+                    )
+                finally:
+                    # Restore original tqdm
+                    tqdm.tqdm = original_tqdm
+                
+                # Now load the model to verify
                 from faster_whisper import WhisperModel
                 
-                # Try to detect CUDA
                 device = "cpu"
                 compute_type = "int8"
                 try:
@@ -624,11 +678,9 @@ class SettingsPage(QWidget):
                 except Exception:
                     pass
                 
-                # This will download the model
                 model = WhisperModel(model_id, device=device, compute_type=compute_type)
-                del model  # Free memory after download
+                del model
                 
-                # Update UI from main thread
                 QTimer.singleShot(0, self._on_download_success)
                 
             except Exception as e:
@@ -641,12 +693,14 @@ class SettingsPage(QWidget):
         """Handle successful model download."""
         self._downloading_model = False
         self._download_progress.hide()
+        self._progress_label.hide()
         self._update_model_status()
     
     def _on_download_error(self, error: str) -> None:
         """Handle model download error."""
         self._downloading_model = False
         self._download_progress.hide()
+        self._progress_label.hide()
         self._download_btn.setText("📥 Télécharger")
         self._download_btn.setEnabled(True)
         self._model_status.setText(f"❌ Erreur: {error[:30]}...")
