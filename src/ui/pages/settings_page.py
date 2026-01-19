@@ -52,7 +52,7 @@ class SettingsPage(QWidget):
         header_widget = QWidget()
         header_widget.setStyleSheet(f"background-color: {Colors.BG_DARK};")
         header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(15, 15, 15, 10)
+        header_layout.setContentsMargins(10, 10, 10, 8)
         
         self._back_btn = QPushButton("← Retour")
         self._back_btn.setFont(QFont("Segoe UI", 10))
@@ -102,8 +102,8 @@ class SettingsPage(QWidget):
         scroll_content = QWidget()
         scroll_content.setStyleSheet(f"background-color: {Colors.BG_DARK};")
         layout = QVBoxLayout(scroll_content)
-        layout.setContentsMargins(15, 10, 15, 20)
-        layout.setSpacing(12)
+        layout.setContentsMargins(15, 8, 15, 15)
+        layout.setSpacing(6)
         
         # --- Microphone ---
         layout.addWidget(self._create_section_label("Microphone"))
@@ -128,13 +128,17 @@ class SettingsPage(QWidget):
         
         api_layout = QHBoxLayout()
         api_layout.setSpacing(8)
+        api_layout.setContentsMargins(0, 0, 0, 0)
+        
         self._api_input = QLineEdit()
         self._api_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self._api_input.setPlaceholderText("gsk_xxxxxxxxxxxx")
+        self._api_input.setPlaceholderText("gsk_xxx...")
         self._api_input.setStyleSheet(self._get_input_style())
-        api_layout.addWidget(self._api_input)
+        self._api_input.setMaximumWidth(200)
+        api_layout.addWidget(self._api_input, 1)
         
-        self._api_save_btn = QPushButton("Sauvegarder")
+        self._api_save_btn = QPushButton("OK")
+        self._api_save_btn.setFixedWidth(50)
         self._api_save_btn.setStyleSheet(self._get_button_style())
         self._api_save_btn.clicked.connect(self._on_api_save)
         api_layout.addWidget(self._api_save_btn)
@@ -144,7 +148,7 @@ class SettingsPage(QWidget):
         # API link
         api_link = QLabel(
             '<a href="https://console.groq.com" style="color: #8B5CF6;">'
-            'Obtenir une clé API gratuite →</a>'
+            'Obtenir une clé API →</a>'
         )
         api_link.setOpenExternalLinks(True)
         api_link.setFont(QFont("Segoe UI", 9))
@@ -159,9 +163,9 @@ class SettingsPage(QWidget):
                 background-color: {Colors.ACCENT_PRIMARY};
                 color: {Colors.BG_DARK};
                 border: none;
-                border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 15px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -258,27 +262,27 @@ class SettingsPage(QWidget):
                 background-color: {Colors.BG_INPUT};
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
-                border-radius: 8px;
-                padding: 10px 12px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-size: 12px;
             }}
             QComboBox:hover {{
                 border-color: {Colors.ACCENT_PRIMARY};
             }}
             QComboBox::drop-down {{
                 border: none;
-                width: 25px;
+                width: 22px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {Colors.BG_CARD};
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
                 selection-background-color: {Colors.ACCENT_PRIMARY};
-                padding: 4px;
+                padding: 3px;
             }}
             QComboBox QAbstractItemView::item {{
-                padding: 6px 10px;
-                min-height: 20px;
+                padding: 5px 8px;
+                min-height: 18px;
             }}
         """
     
@@ -288,9 +292,9 @@ class SettingsPage(QWidget):
                 background-color: {Colors.BG_INPUT};
                 color: {Colors.TEXT_PRIMARY};
                 border: 1px solid {Colors.BORDER_DEFAULT};
-                border-radius: 8px;
-                padding: 10px 12px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-size: 12px;
             }}
             QLineEdit:focus {{
                 border-color: {Colors.ACCENT_PRIMARY};
@@ -316,14 +320,14 @@ class SettingsPage(QWidget):
         return f"""
             QCheckBox {{
                 color: {Colors.TEXT_PRIMARY};
-                font-size: 13px;
-                spacing: 10px;
-                padding: 6px 0;
+                font-size: 12px;
+                spacing: 8px;
+                padding: 4px 0;
             }}
             QCheckBox::indicator {{
-                width: 40px;
-                height: 22px;
-                border-radius: 11px;
+                width: 32px;
+                height: 18px;
+                border-radius: 9px;
                 border: none;
                 background-color: {Colors.SUCCESS};
             }}
@@ -333,14 +337,14 @@ class SettingsPage(QWidget):
         return f"""
             QCheckBox {{
                 color: {Colors.TEXT_MUTED};
-                font-size: 13px;
-                spacing: 10px;
-                padding: 6px 0;
+                font-size: 12px;
+                spacing: 8px;
+                padding: 4px 0;
             }}
             QCheckBox::indicator {{
-                width: 40px;
-                height: 22px;
-                border-radius: 11px;
+                width: 32px;
+                height: 18px;
+                border-radius: 9px;
                 border: none;
                 background-color: {Colors.ERROR};
             }}
@@ -484,9 +488,9 @@ class SettingsPage(QWidget):
                 background-color: {Colors.ACCENT_PRIMARY};
                 color: {Colors.BG_DARK};
                 border: none;
-                border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 13px;
+                border-radius: 6px;
+                padding: 8px 15px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
