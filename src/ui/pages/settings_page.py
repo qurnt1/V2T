@@ -50,6 +50,7 @@ class SettingsPage(QWidget):
     hotkey_changed = pyqtSignal(str)
     _progress_updated = pyqtSignal(int)  # For thread-safe progress updates
     _progress_text_updated = pyqtSignal(str)  # For thread-safe text updates
+    _hotkey_display_updated = pyqtSignal()  # For thread-safe hotkey display updates
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -65,6 +66,7 @@ class SettingsPage(QWidget):
         """Connect internal signals."""
         self._progress_updated.connect(self._on_progress_update)
         self._progress_text_updated.connect(self._on_progress_text_update)
+        self._hotkey_display_updated.connect(self._update_hotkey_display)
     
     def _setup_ui(self) -> None:
         """Setup the page layout."""
@@ -532,12 +534,8 @@ class SettingsPage(QWidget):
                     settings.set("hotkey", key)
                     self.hotkey_changed.emit(key)
                     
-                    # Update UI in main thread
-                    from PyQt6.QtCore import QMetaObject, Qt, Q_ARG
-                    QMetaObject.invokeMethod(
-                        self, "_update_hotkey_display",
-                        Qt.ConnectionType.QueuedConnection
-                    )
+                    # Update UI in main thread via signal
+                    self._hotkey_display_updated.emit()
             finally:
                 self._capturing_hotkey = False
         
