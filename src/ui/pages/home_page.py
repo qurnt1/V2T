@@ -36,6 +36,7 @@ class HomePage(QWidget):
         
         self._is_recording = False
         self._is_transcribing = False
+        self._current_hotkey = "F8"  # Default hotkey, updated via update_hotkey_text
         self._setup_ui()
     
     def _setup_ui(self) -> None:
@@ -185,10 +186,11 @@ class HomePage(QWidget):
             self._status_label.setText(message)
             self._status_label.setStyleSheet(f"color: {Colors.ERROR};")
         
-        self._hotkey_label.setText("ou appuyez sur F8")
+        self._hotkey_label.setText(f"ou appuyez sur {self._current_hotkey}")
     
     def update_hotkey_text(self, hotkey: str) -> None:
         """Update the hotkey hint text."""
+        self._current_hotkey = hotkey
         if not self._is_recording and not self._is_transcribing:
             self._hotkey_label.setText(f"ou appuyez sur {hotkey}")
     

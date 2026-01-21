@@ -136,6 +136,9 @@ class MainWindow(QMainWindow):
     
     def _on_hotkey_main_thread(self) -> None:
         """Handle hotkey press in main thread."""
+        # Ignore hotkey if we're on the settings page (avoid bugs when changing hotkey)
+        if self._stack.currentWidget() == self._settings_page:
+            return
         self._toggle_recording()
     
     def _setup_audio(self) -> None:
